@@ -14,6 +14,24 @@ import scipy.sparse as sp
 from nltk.corpus import wordnet as wn
 from nltk.tokenize import WordPunctTokenizer
 
+# Taken from SHAP library decision_plot code.
+def change_shap_base_value(base_value, new_base_value, shap_values) -> np.ndarray:
+    """Shift SHAP base value to a new value. This function assumes that `base_value` and `new_base_value` are scalars
+    and that `shap_values` is a two or three dimensional array.
+    """
+    # matrix of shap_values
+    if shap_values.ndim == 2:
+        return shap_values + (base_value - new_base_value) / shap_values.shape[1]
+
+    # cube of shap_interaction_values
+    main_effects = shap_values.shape[1]
+    all_effects = main_effects * (main_effects + 1) // 2
+    temp = (base_value - new_base_value) / all_effects / 2  # divided by 2 because interaction effects are halved
+    shap_values = shap_values + temp
+    # Add the other half to the main effects on the diagonal
+    idx = np.diag_indices_from(shap_values[0])
+    shap_values[:, idx[0], idx[1]] += temp
+    return shap_values
 
 def preprocess_text(documents):
     cleaned_documents = [doc.lower() for doc in documents]

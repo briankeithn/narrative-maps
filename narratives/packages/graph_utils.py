@@ -12,7 +12,7 @@ def build_graph(graph_df):
             G.add_edge(str(row['id']), str(adj), weight=max(-log(row['adj_weights'][idx]),0))
     return G
 
-def graph_stories(G):
+def graph_stories(G, start_nodes=[], end_nodes=[]):
     # Base case, return the nodes if there is 1 or fewer nodes left.
     if len(G.nodes()) == 0:
         return []
@@ -23,15 +23,31 @@ def graph_stories(G):
         return [[node] for node in G.nodes()]
     # Main case.
     # Get maximum likelihood chain.
-    mlc = get_shortest_path(G)
+    if len(start_nodes) > 0 and len(end_nodes) > 0: # First, special case when there is a start and end node.
+        if nx.has_path(G, str(start_nodes[0]), str(end_nodes[0])):
+            mlc = nx.shortest_path(G, str(start_nodes[0]), str(end_nodes[0]), weight='weight')
+        else:
+            mlc = get_shortest_path(G) # Case where no paths exist. 
+    else:
+        mlc = get_shortest_path(G)
     # Remove all nodes and adjacent edges to the maximum likelihood chain.
     H = G.copy()
     for node in mlc:
         H.remove_node(node)
+
     # Normalize outgoing edges to sum up to 1.
     H = normalize_graph(H)
-    # Recursive call.
-    return [mlc] + graph_stories(H)
+
+    # Recursive call (special case if multiple connected components)
+    #if nx.is_connected(H):
+    #print("Connected. No issues.")
+    return [mlc] + graph_stories(H) # We no longer have any other end or start that is fixed.
+    #else:
+    #    print("Disconnected.")
+    #    all_stories = [mlc]
+    #    for H_i in nx.connected_components(H):
+    #        all_stories + graph_stories(H_i)
+    #    return all_stories
 
 def get_shortest_path(G):
     sources = [node for node, in_degree in G.in_degree() if in_degree == 0]

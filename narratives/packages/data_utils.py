@@ -193,10 +193,8 @@ def read_query(dataset, start_date=None, end_date=None, partial=False):
         query = pd.read_csv("../data/" + str(dataset) + '.csv')
     query = clean_publication(query)
 
-    if dataset == 'cuba' or dataset == 'cuba_small': # This is date time.
-        query['date'] = pd.to_datetime(query['date'], format='%m/%d/%Y %H:%M') #8/22/2019 12:15
-    else:
-        query['date'] = pd.to_datetime(query['date'], format='%m/%d/%Y').dt.date
+    # Inferring datatime format (this might bring issues depending on the data!)
+    query['date'] = pd.to_datetime(query['date'], infer_datetime_format=True) #8/22/2019 12:15
 
     if start_date is not None:
         query = query[(query['date'] >= pd.to_datetime(start_date, format='%Y-%m-%d'))]

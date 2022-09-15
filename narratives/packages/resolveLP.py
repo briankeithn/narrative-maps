@@ -38,7 +38,8 @@ window_j_i = {}
 
 def create_LP(query, sim_table, membership_vectors, clust_sim_table, exp_temp_table, ent_table, numclust, relevance_table,
     K, mincover, sigma_t, credibility=[], bias=[], operations=[],
-    has_start=True, has_end=False, window_time=None, cluster_list=[], start_nodes=[], verbose=True, force_cluster=True, previous_varsdict=None):
+    has_start=True, has_end=False, window_time=None, cluster_list=[], start_nodes=[], end_nodes=[],
+    verbose=True, force_cluster=True, previous_varsdict=None):
     n = len(query.index) #We can cut out everything after the end.
     # Variable names and indices
     var_i = []
@@ -176,7 +177,6 @@ def create_LP(query, sim_table, membership_vectors, clust_sim_table, exp_temp_ta
         if verbose:
             print("Start node(s):")
             print(start_nodes)
-            print(has_start)
         if num_starts == 0: # This is the default when no list is given and it has a start.
             prob += node_act_vars[str(0)] == 1, 'InitialNode'
         else:
@@ -188,7 +188,20 @@ def create_LP(query, sim_table, membership_vectors, clust_sim_table, exp_temp_ta
                 prob += node_act_vars[str(node)] == initial_energy, 'InitialNode' + str(node)
 
     if has_end:
-        prob += node_act_vars[str(n - 1)] == 1, 'FinalNode'
+        num_ends = len(end_nodes)
+        if verbose:
+            print("End node(s):")
+            print(end_nodes)
+        if num_ends == 0: # This is the default when no list is given and it has a start.
+            prob += node_act_vars[str(n - 1)] == 1, 'FinalNode'
+        else:
+            if verbose:
+                print("Added end node(s)")
+                print("--- %s seconds ---" % (time() - start_time))
+            final_energy = 1.0 / num_ends
+            for node in end_nodes:
+                prob += node_act_vars[str(node)] == final_energy, 'FinalNode' + str(node)
+
 
     if verbose:
         print("Chain constraints created.")
@@ -206,7 +219,7 @@ def create_LP(query, sim_table, membership_vectors, clust_sim_table, exp_temp_ta
             print("--- %s seconds ---" % (time() - start_time))
         for j in range(1, n):
             if j not in start_nodes:
-                prob += lpSum([node_next_vars[str(i) + "_" + str(j)] for i in window_j_i[j]]) >= node_act_vars[str(j)], 'InEdgeReq' + str(j)
+                prob += lpSum([node_next_vars[str(i) + "_" + str(j)] for i in window_j_i[j]]) == node_act_vars[str(j)], 'InEdgeReq' + str(j)
             else:
                 if verbose:
                     print("Generating specific starting node constraints.")
@@ -220,13 +233,20 @@ def create_LP(query, sim_table, membership_vectors, clust_sim_table, exp_temp_ta
             prob += lpSum([node_next_vars[str(i) + "_" + str(j)] for i in window_j_i[j]]) <= node_act_vars[str(j)], 'InEdgeReq' + str(j)
     if verbose:
         print("In-degree constraints created.")
+        print("--- %s seconds ---" % (time() - start_time))
 
     if has_end:
         if verbose:
             print("Equality constraints.")
             print("--- %s seconds ---" % (time() - start_time))
         for i in range(0, n - 1):
-            prob += lpSum([node_next_vars[str(i) + "_" + str(j)] for j in window_i_j[i]]) == node_act_vars[str(i)], 'OutEdgeReq'  + str(i)
+            if i not in end_nodes:
+                prob += lpSum([node_next_vars[str(i) + "_" + str(j)] for j in window_i_j[i]]) == node_act_vars[str(i)], 'OutEdgeReq'  + str(i)
+            else:
+                if verbose:
+                    print("Generating specific starting node constraints.")
+                    print("--- %s seconds ---" % (time() - start_time))
+                prob += lpSum([node_next_vars[str(i) + "_" + str(j)] for j in window_i_j[i]]) == 0, 'OutEdgeReq'  + str(i)
     else:
         if verbose:
             print("Inequality constraints.")
@@ -236,14 +256,6 @@ def create_LP(query, sim_table, membership_vectors, clust_sim_table, exp_temp_ta
     if verbose:
         print("Out-degree constraints created.")
         print("--- %s seconds ---" % (time() - start_time))
-
-    #for i in range(0, n - 2):
-    #    for j in window_i_j[i][1:]:
-    #        for k in range(i + 1, j):
-    #            prob += node_next_vars[str(i) + "_" + str(j)] <= 1 - node_act_vars[str(k)], 'NoSkippingTrans'  + str(i) + "_" + str(j) + "_" + str(k)
-    #if verbose:
-    #    print("No-skip constraints created.")
-    #    print("--- %s seconds ---" % (time() - start_time))
 
     # Coverage
     if numclust > 1:
@@ -310,7 +322,7 @@ def build_graph_df_multiple_starts(query, varsdict, prune=None, threshold=0.01, 
     for i in range(0, n):
         prob = []
         coherence = varsdict["node_act_" + str(i)]
-        if coherence < threshold:
+        if coherence <= threshold:
             continue
         coherence_list = []
         index_list = []
@@ -318,8 +330,8 @@ def build_graph_df_multiple_starts(query, varsdict, prune=None, threshold=0.01, 
             name = "node_next_" + str(i) + "_" + str(j)
             prob.append(varsdict[name])
             coherence_list.append(varsdict["node_act_" + str(j)])
-        idx_list = [window_i_j[i][idx] for idx, e in enumerate(prob) if round(e,8) != 0 and e >= threshold and coherence_list[idx] >= threshold] # idx + i + 1
-        nz_prob = [e for idx, e in enumerate(prob) if round(e,8) != 0 and e >= threshold and coherence_list[idx] >= threshold]
+        idx_list = [window_i_j[i][idx] for idx, e in enumerate(prob) if round(e,8) != 0 and e > threshold and coherence_list[idx] > threshold] # idx + i + 1
+        nz_prob = [e for idx, e in enumerate(prob) if round(e,8) != 0 and e > threshold and coherence_list[idx] > threshold]
         if prune:
             if len(idx_list) > prune:
                 top_prob_idx = sorted(range(len(nz_prob)), key=lambda k: nz_prob[k])[-prune:]
@@ -350,9 +362,9 @@ def build_graph_df_multiple_starts(query, varsdict, prune=None, threshold=0.01, 
     return graph_df
 
 def check_extra_starts(graph_df, start_nodes):
-    print("Start nodes")
-    print(start_nodes)
-    print(type(start_nodes[0]))
+    #print("Start nodes")
+    #print(start_nodes)
+    #print(type(start_nodes[0]))
     # Start nodes should be properly defined at this point.
     all_nodes = set()
     has_incoming = set()
@@ -363,8 +375,8 @@ def check_extra_starts(graph_df, start_nodes):
         for j in adj_list:
             has_incoming.add(j)
 
-    print("No incoming")
-    print(list(all_nodes.difference(has_incoming)))
+    #print("No incoming")
+    #print(list(all_nodes.difference(has_incoming)))
     if len(list(all_nodes.difference(has_incoming))) > 0:
         print(type(list(all_nodes.difference(has_incoming))[0]))
 
@@ -383,7 +395,7 @@ def graph_clean_up(graph_df, start_nodes=[]):
     return graph_df
 
 
-def compute_sim(query):#, is_WMDS=False):
+def compute_sim(query, min_dist=0.0):#, is_WMDS=False):
     doc_list = []
     for index, article in query.iterrows():
         doc_list.append(article['embed'])
@@ -393,23 +405,26 @@ def compute_sim(query):#, is_WMDS=False):
     cluster_size_est = 5 * round(cluster_size_est / 5) # Round to nearest multiple of 5
 
     n_neighbors = 2
+    init = 'random'
     if len(query.index) > 40:
         n_neighbors = 10
+        init = 'spectral'
     elif len(query.index) > 120:
         n_neighbors = cluster_size_est
-
+        init = 'spectral'
     #if is_WMDS:
     #    clusterable_embedding, X_scaled = WMDS(X)
     #else:
     random_state = 42
-    clusterable_embedding = umap.UMAP(n_neighbors=n_neighbors, random_state=np.random.RandomState(random_state)).fit_transform(X)
+    clusterable_embedding = umap.UMAP(n_neighbors=n_neighbors, min_dist=min_dist, init=init, random_state=np.random.RandomState(random_state)).fit_transform(X)
 
-    cosine_sim = False
+    cosine_sim = True
     if cosine_sim:
         similarities = np.clip(cosine_similarity(clusterable_embedding), -1 , 1)
         # Force normalize
         sim_table = (1 - np.arccos(similarities) / pi)
         sim_table = (sim_table - np.amin(sim_table)) / (np.amax(sim_table) - np.amin(sim_table))
+        sim_table = np.clip(sim_table, 0, 1)
     else:
         dist_mat = distance.cdist(clusterable_embedding, clusterable_embedding, 'euclidean')
         dist_mat = (dist_mat - np.min(dist_mat))/(np.ptp(dist_mat) - np.min(dist_mat))
@@ -435,8 +450,8 @@ def compute_temp_distance_table(query, dataset):
     np.save(filename, temporal_distance_table)
     return temporal_distance_table
 
-def compute_sim_with_t(query, dataset, sigma_t=30):#, is_WMDS=False): # Assume no temporal similarity by default.
-    sim_table = compute_sim(query)#, is_WMDS)
+def compute_sim_with_t(query, dataset, sigma_t=30, min_dist=0.0):#, is_WMDS=False): # Assume no temporal similarity by default.
+    sim_table = compute_sim(query, min_dist)#, is_WMDS)
     if sigma_t == 0:
         return sim_table
     # Compute temporal distances
@@ -506,10 +521,10 @@ def solve_LP_from_query(query, dataset,
     min_samples=2, min_cluster_size=2,
     n_neighbors=2, min_dist=0.0,
     sigma_t = 30,
-    cred_check=False, start_nodes=[],
+    cred_check=False, start_nodes=[], end_nodes=[],
     verbose=True, random_state=42,
     force_cluster=True,
-    use_entities=True, use_temporal=True, strict_start=False):#, is_WMDS=False):
+    use_entities=True, use_temporal=True, strict_start=False, umap_init='spectral'):#, is_WMDS=False):
 
     global start_time
     start_time = time()
@@ -543,7 +558,8 @@ def solve_LP_from_query(query, dataset,
     #if is_WMDS:
     #    clusterable_embedding, X_scaled = WMDS(X)
     #else:
-    clusterable_embedding = umap.UMAP(n_neighbors=n_neighbors, random_state=np.random.RandomState(random_state)).fit_transform(X)
+    print("UMAP Initialization: " + str(umap_init))
+    clusterable_embedding = umap.UMAP(n_neighbors=n_neighbors,  min_dist=min_dist, init=umap_init, random_state=np.random.RandomState(random_state)).fit_transform(X)
     #print(clusterable_embedding)
     if len(cluster_list) > 0:
         #if is_WMDS:
@@ -556,12 +572,12 @@ def solve_LP_from_query(query, dataset,
         target = -np.ones(X.shape[0])
         for clust_idx, cluster in enumerate(cluster_list):
             target[cluster] = clust_idx
-        clusterable_embedding = umap.UMAP(n_neighbors=n_neighbors, random_state=np.random.RandomState(random_state)).fit_transform(X, y=target)
+        clusterable_embedding = umap.UMAP(n_neighbors=n_neighbors, min_dist=min_dist, init=umap_init, random_state=np.random.RandomState(random_state)).fit_transform(X, y=target)
     if verbose:
         print("Computed projection.")
         print("--- %s seconds ---" % (time() - start_time))
 
-    cosine_sim = False
+    cosine_sim = True
     if cosine_sim:
         similarities = np.clip(cosine_similarity(clusterable_embedding), -1 , 1)
         # Force normalize
@@ -571,6 +587,7 @@ def solve_LP_from_query(query, dataset,
         max_value = sim_table[mask].max()
         min_value = sim_table[mask].min()
         sim_table = (sim_table - min_value) / (max_value - min_value)
+        sim_table = np.clip(sim_table, 0, 1)
     else:
         dist_mat = distance.cdist(clusterable_embedding, clusterable_embedding, 'euclidean')
 
@@ -689,6 +706,8 @@ def solve_LP_from_query(query, dataset,
     has_start = False
     if start_nodes is not None:
         has_start = (len(start_nodes) > 0)
+    if end_nodes is not None:
+        has_end = (len(end_nodes) > 0)
     if verbose:
         print("Creating LP...")
 
@@ -701,8 +720,8 @@ def solve_LP_from_query(query, dataset,
     prob = create_LP(query, sim_table, membership_vectors, clust_sim_table, exp_temp_table, ent_table, numclust, relevance_table,
         K=K, mincover=mincover, sigma_t=sigma_t,
         operations=operations, cluster_list=cluster_list,
-        has_start=has_start, has_end=False,
-        window_time=window_time, start_nodes=start_nodes, verbose=verbose, force_cluster=force_cluster, previous_varsdict=previous_varsdict)
+        has_start=has_start, has_end=has_end,
+        window_time=window_time, start_nodes=start_nodes, end_nodes=end_nodes, verbose=verbose, force_cluster=force_cluster, previous_varsdict=previous_varsdict)
     if verbose:
         print("Saving model...")
         print("--- %s seconds ---" % (time() - start_time))
@@ -710,7 +729,7 @@ def solve_LP_from_query(query, dataset,
     if verbose:
         print("Solving model...")
         print("--- %s seconds ---" % (time() - start_time))
-    prob.solve(PULP_CBC_CMD(mip=True, warmStart=True))#(GLPK_CMD(path = 'C:\\glpk-4.65\\w64\\glpsol.exe', options = ["--tmlim", "180"]))
+    prob.solve(PULP_CBC_CMD(mip=False, warmStart=True))#(GLPK_CMD(path = 'C:\\glpk-4.65\\w64\\glpsol.exe', options = ["--tmlim", "180"]))
 
 
     varsdict = extract_varsdict(prob)
@@ -718,6 +737,7 @@ def solve_LP_from_query(query, dataset,
     with open(varsdict_filename, 'wb') as handle:
         pickle.dump(varsdict, handle, protocol=pickle.HIGHEST_PROTOCOL)
     graph_df = build_graph_df_multiple_starts(query, varsdict, prune=ceil(sqrt(K)), threshold=0.1/K, cluster_dict=cluster_dict)
+    #graph_df = build_graph_df_multiple_starts(query, varsdict, prune=None, threshold=0.001, cluster_dict=cluster_dict)
 
     if verbose:
         print("Graph data frame construction...")

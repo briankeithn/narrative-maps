@@ -27,6 +27,7 @@ import flask
 from networkx.drawing.nx_agraph import write_dot, graphviz_layout
 
 # Explanations
+import textwrap
 import shap
 import io
 import base64
@@ -53,12 +54,12 @@ app = DashProxy(#dash.Dash(
     )
 app.title = 'Narrative Maps Visualization Tool'
 
-toggle_row_ent = html.Tr([html.Td("Emphasize common entities in connections."), html.Td(daq.BooleanSwitch(id='use-entities', on=True, color="lightblue"))])
-toggle_row_temp = html.Tr([html.Td("Penalize temporal distance in connections."), html.Td(daq.BooleanSwitch(id='use-temporal', on=True, color="lightblue"))])
+toggle_row_ent = html.Tr([html.Td("Emphasize common entities in connections."), html.Td(daq.BooleanSwitch(id='use-entities', on=False, color="lightblue"))])
+toggle_row_temp = html.Tr([html.Td("Penalize temporal distance in connections."), html.Td(daq.BooleanSwitch(id='use-temporal', on=False, color="lightblue"))])
 toggle_row_si = html.Tr([html.Td("Enable semantic interactions."), html.Td(daq.BooleanSwitch(id='use-si', on=True, color="lightblue"))])
 toggle_row_xai = html.Tr([html.Td("Enable explainable AI and connection explanation labels."), html.Td(daq.BooleanSwitch(id='use-xai', on=True, color="lightblue"))])
 toggle_row_names = html.Tr([html.Td("Enable storyline name extraction."), html.Td(daq.BooleanSwitch(id='use-names', on=True, color="lightblue"))])
-toggle_strict_start = html.Tr([html.Td("Enable strict start mode (only if a start event is provided)."), html.Td(daq.BooleanSwitch(id='strict-start', on=True, color="lightblue"))])
+toggle_strict_start = html.Tr([html.Td("Enable strict start mode (only if a start event is provided)."), html.Td(daq.BooleanSwitch(id='strict-start', on=False, color="lightblue"))])
 toggle_table = dbc.Table([html.Tbody([toggle_row_ent, toggle_row_temp, toggle_row_si, toggle_row_xai, toggle_row_names, toggle_strict_start])], bordered=False, borderless=True, style={'vertical-align': 'middle'})
 
 # Files
@@ -79,8 +80,9 @@ app.layout = html.Div([
             id="dataset-choice",
             options=[{'label':'Coronavirus Data', 'value': 'cv'},
                     {'label':'Papers', 'value': 'papers'},
-                    {'label':'Cuban Protests', 'value': 'cuba'},
+                    {'label':'Cuban Protests (Full)', 'value': 'cuba'},
                     {'label':'Cuban Protests (Small)', 'value': 'cuba_small'},
+                    {'label':'Cuban Protests (160)', 'value': 'cuba_160'},
                     {'label':'Crescent', 'value': 'crescent'}],
             optionHeight=50,
             style={'width': '150px', 'margin-right': '5px'},
@@ -105,12 +107,12 @@ app.layout = html.Div([
             title="Remove Connection", id='remove-edge-button'),
         html.Button(className="map_btn", style={'background-image' : 'url("/static/toggle_main_route.svg")'},
             title="Toggle Normal Connection/Main Route", id='main-route-button'),
-        html.Button(className="map_btn", style={'background-image' : 'url("/static/add_storyline.svg")'},
-            title="Add Event to Storyline", id='add-cluster-list'),
         html.Button(className="map_btn", style={'background-image' : 'url("/static/compare_events.svg")'},
             title="Compare Events", id='compare-nodes'),
         html.Button(className="map_btn", style={'background-image' : 'url("/static/explain_edge.svg")'},
             title="Explain Edge", id='explain-edge'),
+        html.Button(className="map_btn", style={'background-image' : 'url("/static/add_storyline.svg")'},
+            title="Add Event to Cluster", id='add-cluster-list'),
         dcc.Dropdown(id="cluster-value",
             options=[{'label':str(k) + " (" + color_cluster[k - 1] + ")", 'value': k} for k in range(1,11)],
             value="1", clearable=False, searchable=False, style={'width': '120px', 'margin-right': '5px'}),
@@ -270,7 +272,7 @@ app.layout = html.Div([
                     html.Div('Data table with all the events from the current data set. You can search for specific events here to add them to the map (select rows and add them to the map). You may also set a single starting event (use the radio button of the row you want to set as the starting event).'),
                     html.Button("Clear Selection", id="clear-tbl"),
                     dt.DataTable(
-                        id='data-tbl', data=query.to_dict('records'), row_selectable='single',
+                        id='data-tbl', data=query.to_dict('records'), row_selectable='multi',
                         style_data={
                             'whiteSpace': 'normal',
                             'height': 'auto',
@@ -369,7 +371,7 @@ def update_data_table(query):
         new_table = [html.Div('Data table with all the events from the current data set. You can search for specific events here to add them to the map (select rows and add them to the map). You may also set a single starting event (use the radio button of the row you want to set as the starting event).'),
                     html.Button("Clear Selection", id="clear-tbl"),
                     dt.DataTable(
-                        id='data-tbl', data=query.to_dict('records'), row_selectable='single',
+                        id='data-tbl', data=query.to_dict('records'), row_selectable='multi',
                         style_data={
                             'whiteSpace': 'normal',
                             'height': 'auto',
@@ -523,12 +525,12 @@ def interact_with_graph(rmv_node, rmv_edge, add_edge, add_node, main_route, anti
                     else:
                         ele["data"]["search"] = "F"
                 elif search_value[0] == "*": # Only cares about the end of the words.
-                    if re.search(r"{}(\b|\s)".format(re.escape(search_value.strip())), ele["data"]["full_text"], flags=re.IGNORECASE):
+                    if re.search(r"(\b|\s){}".format(re.escape(search_value.strip())), ele["data"]["full_text"], flags=re.IGNORECASE):
                         ele["data"]["search"] = "T"
                     else:
                         ele["data"]["search"] = "F"
                 elif search_value[-1] == "*": # Only cares about the start of the word.
-                    if re.search(r"(\b|\s){}".format(re.escape(search_value.strip())), ele["data"]["full_text"], flags=re.IGNORECASE):
+                    if re.search(r"{}(\b|\s)".format(re.escape(search_value.strip())), ele["data"]["full_text"], flags=re.IGNORECASE):
                         ele["data"]["search"] = "T"
                     else:
                         ele["data"]["search"] = "F"
@@ -635,24 +637,41 @@ def interact_with_graph(rmv_node, rmv_edge, add_edge, add_node, main_route, anti
         cluster_size_est = 5 * round(cluster_size_est / 5) # Round to nearest multiple of 5
 
         n_neighbors = 2
-        if len(query.index) > 50:
+        init = 'random'
+        print(init)
+        if len(query.index) > 40:
             n_neighbors = 10
+            init = 'spectral'
         elif len(query.index) > 120:
             n_neighbors = cluster_size_est
-
-
+            init = 'spectral'
+        start_nodes=[]
+        end_nodes=[]
+        if len(selected_rows_table) > 2:
+            return [elements, base_layout, html.P("Error: Select at most 2 events in the table."), previous_actions, scatter_fig, execution_id, xai_tab, overview_tab]            
+        elif len(selected_rows_table) == 2:
+            start_nodes = [selected_rows_table[0]]
+            end_nodes = [selected_rows_table[1]]
+            if start_nodes[0] > end_nodes[0]: # If not in chronological order
+                swap = start_nodes[0]
+                start_nodes[0] = end_nodes[0]
+                end_nodes[0] = swap
+        elif len(selected_rows_table) == 1:
+            start_nodes = [selected_rows_table[0]]
+            # If this is not the case then there are zero rows selected.
+        min_dist = 0.0
         graph_df_new, status, scatter_df, sim_table, clust_sim_table, ent_table, ent_doc_list, cluster_assignment = solve_LP_from_query(query,
                 dataset=str(dataset), operations=operation_list, window_time=window,
                 K=k_input, mincover=mincover_input/100, sigma_t=sigma_t,
-                min_samples=2, min_cluster_size=cluster_size_est, n_neighbors=n_neighbors, min_dist=1/100,
-                cred_check=cred_check_bool, start_nodes=selected_rows_table,
+                min_samples=2, min_cluster_size=cluster_size_est, n_neighbors=n_neighbors, min_dist=min_dist,
+                cred_check=cred_check_bool, start_nodes=start_nodes, end_nodes=end_nodes, umap_init=init,
                 use_entities=use_entities, use_temporal=use_temporal, strict_start=strict_start)
         status_msg = "LP Status: " + status[1] + ", Clusters: " + str(status[0])# + ", Storylines: " + str(numstories)
 
         if 'Optimal' in status[1]:
             # Generate graph from LP solution.
             G = build_graph(graph_df_new)
-            storylines = graph_stories(G)
+            storylines = graph_stories(G, start_nodes=start_nodes, end_nodes=end_nodes)
             status_msg += ", Storylines: " + str(len(storylines))
 
             # We now apply transitive reduction.
@@ -758,7 +777,10 @@ def interact_with_graph(rmv_node, rmv_edge, add_edge, add_node, main_route, anti
             A.write("test.dot")
             layout = [(n, A.get_node(n).attr['pos']) for n in A.nodes()]
             positions_dot= {n: tuple(float(ss) for ss in s.split(",")) for (n,s) in layout}
-            temporal_sim_table = compute_sim_with_t(query, str(dataset), sigma_t)
+            if use_temporal:
+                temporal_sim_table = compute_sim_with_t(query, str(dataset), sigma_t, min_dist=min_dist)
+            else:
+                temporal_sim_table = compute_sim(query, min_dist=min_dist)
             low_dim_projection, unraveled_set = force_layout(query, positions_dot, temporal_sim_table, top_k=similar_input)
             hub_nodes = get_representative_landmarks(G, storylines, query, mode="centrality")
             antichain = get_representative_landmarks(G, storylines, query, mode="centroid")
@@ -782,6 +804,7 @@ def interact_with_graph(rmv_node, rmv_edge, add_edge, add_node, main_route, anti
             low_dim_projection, query, positions_dot,
             storylines, story_names, unraveled_set, elements, label_length)
             # Additional plot.
+            scatter_df.title = scatter_df.title.apply(lambda txt: '<br>'.join(textwrap.wrap(txt, width=40)))
             scatter_fig = px.scatter(scatter_df, x="X", y="Y", color="cluster_id", custom_data=['cluster_id','title'])
             scatter_fig.update_traces(
                 hovertemplate="<br>".join([
@@ -823,7 +846,7 @@ def interact_with_graph(rmv_node, rmv_edge, add_edge, add_node, main_route, anti
                 if topic_count == 1:
                     topic_count_desc = "There is only a single topic cluster in the data set."
                 # Process topic lists
-                topic_list = [html.Div("Topic " + str(idx_topic + 1) + ": " + desc, style={'fontSize': 14}) for idx_topic, desc in enumerate(cluster_description)]
+                topic_list = [html.Div("Topic " + str(idx_topic) + ": " + desc, style={'fontSize': 14}) for idx_topic, desc in enumerate(cluster_description)]
                 # Process entities
                 extended_ent_list = chain.from_iterable(ent_doc_list)
                 entity_list_count = Counter([truecase.get_true_case(ent.text.lower().strip()) for ent in extended_ent_list])
@@ -863,50 +886,65 @@ def interact_with_graph(rmv_node, rmv_edge, add_edge, add_node, main_route, anti
               State('cytoscape', 'selectedNodeData'),
               State('store', 'data')])
 def explainTwoEvents(cmp_btn, execution_id, node_data, query):
-    if len(node_data) == 2: # Only two nodes.
-        if "story" in node_data[0]['id'] or "story" in node_data[0]['id']:
-            return ["", ""]
-        output_list = []
-        #query = read_query(dataset, start_date, end_date)
-        #offset = min(query.id.astype('int'))
-        print(execution_id)
-        print(node_data[0]['id'])
-        print(node_data[1]['id'])
-        id_start = int(node_data[0]['id'].replace("_" + str(execution_id) + "I", '').replace('_out', ''))# - offset)
-        id_end = int(node_data[1]['id'].replace("_" + str(execution_id) + "I", '').replace('_out', ''))# - offset)
+    if node_data is not None:
+        if len(node_data) == 2: # Only two nodes.
+            if "story" in node_data[0]['id'] or "story" in node_data[0]['id']:
+                return ["", ""]
+            output_list = []
+            #query = read_query(dataset, start_date, end_date)
+            #offset = min(query.id.astype('int'))
+            print(execution_id)
+            print(node_data[0]['id'])
+            print(node_data[1]['id'])
+            id_start = int(node_data[0]['id'].replace("_" + str(execution_id) + "I", '').replace('_out', ''))# - offset)
+            id_end = int(node_data[1]['id'].replace("_" + str(execution_id) + "I", '').replace('_out', ''))# - offset)
 
-        s1_row = query.loc[query['id'] == str(id_start)].iloc[0] # Access single row.
-        s2_row = query.loc[query['id'] == str(id_end)].iloc[0]
-        s1 = s1_row['title']
-        s2 = s2_row['title']
+            s1_row = query.loc[query['id'] == str(id_start)].iloc[0] # Access single row.
+            s2_row = query.loc[query['id'] == str(id_end)].iloc[0]
+            s1 = s1_row['title']
+            s2 = s2_row['title']
 
-        shap_values, features = sim_explanation(s1, s2)
-        # Generate plot here.
+            shap_values, features = sim_explanation(s1, s2)
+            # Generate plot here.
 
-        df_dict = features.to_dict('records')[0]
-        words = list(df_dict.values())
-        positions = list(df_dict.keys())
-        values = shap_values.values[0].tolist()
+            #df_dict = features.to_dict('records')[0]
+            #words = list(df_dict.values())
+            #positions = list(df_dict.keys())
+            #values = shap_values.values[0].tolist()
+            #words, positions, values = zip(*[(word, position, value) for word, position, value in zip(words, positions, values) if word not in all_stopwords and word not in string.punctuation])
+            #feature_names = ["{} = {}".format(a_, b_) for a_, b_ in zip(positions, words)]
+            #values = np.array(values).reshape(1, -1)
 
-        words, positions, values = zip(*[(word, position, value) for word, position, value in zip(words, positions, values) if word not in all_stopwords and word not in string.punctuation])
-        feature_names = ["{} = {}".format(a_, b_) for a_, b_ in zip(positions, words)]
-        values = np.array(values).reshape(1, -1)
+            #shap.summary_plot(values, feature_names=feature_names, show=False, plot_type="bar")
+            #shap_plot = plt.gcf()
 
-        #shap.summary_plot(values, feature_names=feature_names, show=False, plot_type="bar")
-        #shap_plot = plt.gcf()
-        shap_plot = shap.waterfall_plot(shap_values[0], show=False)
-
-        # Output plot as image.
-        s = io.BytesIO()
-        shap_plot.savefig(s, format='png', bbox_inches="tight")
-        plt.close(shap_plot)
-        s = base64.b64encode(s.getvalue()).decode("utf-8").replace("\n", "")
-        img = 'data:image/png;base64,%s' % s
-        output_list += [html.Strong("Influential keywords in event comparison", style={'fontSize': 16, 'text-decoration': 'underline'}),
-                        html.Div("Event 1: " + s1_row['title']),
-                        html.Div("Event 2: " + s2_row['title']),
-                        html.Img(src=img, style={"max-width": "100%"})] # Final element is shap plot.
-        return [output_list, ""]
+            #expected_value = shap_values.base_values[0]
+            #shap.decision_plot(expected_value, 
+            #                   shap_values.values, 
+            #                   shap_values.data,
+            #                   link='identity', 
+            #                   new_base_value=0.5,
+            #                   feature_order='hclust', 
+            #                   show=False,
+            #                   feature_display_range=slice(None, None, 1))#new_base_value)
+            #shap_plot = shap.waterfall_plot(shap_values[0], show=False)
+            max_display = shap_values.values.shape[1]
+            expected_value = shap_values.base_values[0]
+            shap_values.values = change_shap_base_value(expected_value, 0.5, shap_values.values)
+            shap_values.base_values[0] = 0.5
+            shap_plot = shap.plots.waterfall(shap_values[0], max_display=max_display, show=False)            
+            #shap_plot = plt.gcf()
+            # Output plot as image.
+            s = io.BytesIO()
+            shap_plot.savefig(s, format='png', bbox_inches="tight")
+            plt.close(shap_plot)
+            s = base64.b64encode(s.getvalue()).decode("utf-8").replace("\n", "")
+            img = 'data:image/png;base64,%s' % s
+            output_list += [html.Strong("Influential keywords in event comparison", style={'fontSize': 16, 'text-decoration': 'underline'}),
+                            html.Div("Event 1: " + s1_row['title']),
+                            html.Div("Event 2: " + s2_row['title']),
+                            html.Img(src=img, style={"max-width": "100%"})] # Final element is shap plot.
+            return [output_list, ""]
     return ["", ""]
 
 
@@ -937,18 +975,34 @@ def explainEdge(cmp_btn, execution_id, xai_tab, edge_data, query, use_xai):
         shap_values, features = sim_explanation(s1, s2)
         # Generate plot here.
 
-        df_dict = features.to_dict('records')[0]
-        words = list(df_dict.values())
-        positions = list(df_dict.keys())
-        values = shap_values.values[0].tolist()
+        #df_dict = features.to_dict('records')[0]
+        #words = list(df_dict.values())
+        #positions = list(df_dict.keys())
+        #values = shap_values.values[0].tolist()
 
-        words, positions, values = zip(*[(word, position, value) for word, position, value in zip(words, positions, values) if word not in all_stopwords and word not in string.punctuation])
-        feature_names = ["{} = {}".format(a_, b_) for a_, b_ in zip(positions, words)]
-        values = np.array(values).reshape(1, -1)
+        #words, positions, values = zip(*[(word, position, value) for word, position, value in zip(words, positions, values) if word not in all_stopwords and word not in string.punctuation])
+        #feature_names = ["{} = {}".format(a_, b_) for a_, b_ in zip(positions, words)]
+        #values = np.array(values).reshape(1, -1)
 
         #shap.summary_plot(values, feature_names=feature_names, show=False, plot_type="bar")
         #shap_plot = plt.gcf()
-        shap_plot = shap.waterfall_plot(shap_values[0], show=False)
+        #shap_plot = shap.waterfall_plot(shap_values[0], show=False)
+        #expected_value = shap_values.base_values[0]
+        #shap.decision_plot(expected_value, 
+        #                   shap_values.values, 
+        #                   shap_values.data,
+        #                   link='identity', 
+        #                   feature_order='hclust', 
+        #                   show=False,
+        #                   new_base_value=0.5,
+        #                   feature_display_range=slice(None, None, 1))
+        #shap_plot = plt.gcf()
+        max_display = shap_values.values.shape[1]
+        expected_value = shap_values.base_values[0]
+        shap_values.values = change_shap_base_value(expected_value, 0.5, shap_values.values)
+        shap_values.base_values[0] = 0.5
+        shap_plot = shap.plots.waterfall(shap_values[0], max_display=max_display, show=False)
+
 
         # Output plot as image.
         s = io.BytesIO()
@@ -960,6 +1014,12 @@ def explainEdge(cmp_btn, execution_id, xai_tab, edge_data, query, use_xai):
         xai_df = pd.DataFrame.from_dict(xai_tab)
         start_row = xai_df.loc[xai_df['id'] == int(id_start)]
         adjacency_list_start = start_row['adj_list'].values[0]
+        if str(id_end) not in adjacency_list_start:
+            # This must be a manual connection.
+            explanation = [html.P("This connection was manually added by the user.")]
+            explanation += [html.Strong("Keyword contributions to the connection", style={'fontSize': 16, 'text-decoration': 'underline'}), html.Img(src=img, style={"max-width": "100%"})]
+            output_list = [html.P(children=[html.Strong('Connection Explanation')], style={'fontSize': 16, 'text-decoration': 'underline'})] + explanation
+            return [output_list, ""] 
         index_end = adjacency_list_start.index(str(id_end))
 
         explanation = []

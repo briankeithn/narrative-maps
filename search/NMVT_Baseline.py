@@ -97,7 +97,7 @@ app.layout = html.Div([
 		children=[
 		dcc.Dropdown(
 			id="dataset-choice",
-			options=[{'label':'Cuban Protests', 'value': 'cuba'}, {'label':'Cuban Protests (Small)', 'value': 'cuba_small'}],
+			options=[{'label':'Cuban Protests (Full)', 'value': 'cuba'}, {'label':'Cuban Protests (Small)', 'value': 'cuba_small'}, {'label':'Cuban Protests (160)', 'value': 'cuba_160'},],
 			optionHeight=50,
 			style={'width': '150px', 'margin-right': '5px'},
 			value='cuba',
