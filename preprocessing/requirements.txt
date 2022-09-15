@@ -1,0 +1,4 @@
+ftfy==6.0.3
+numpy==1.21.2
+pandas==1.2.4
+sentence_transformers==2.2.2
