@@ -26,7 +26,7 @@ The current version of "narratives" and "search" are deployed in PythonAnywhere.
 **Please note that the deployment in PythonAnywhere is likely much more slow than running it in your own system.**
 
 ## Running with custom data
-I added a specific option to run with Custom data in your local version. Simply create a "custom.csv" file, place it in the "data" folder, and select the "Custom" option in the data selection drop down in the main menu.
+I added a specific option to run with Custom data in your local version (not available in the PythonAnywhere version!). Simply create a "custom.csv" file, place it in the "data" folder, and select the "Custom" option in the data selection drop down in the main menu.
 
 The CSV file must have the following structure (columns):
 - id (numerical id, assumed integer, assumed 0-indexed in increasing order by date, so 0 is the first document in temporal order)
