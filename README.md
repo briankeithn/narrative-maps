@@ -15,7 +15,7 @@ python NMVT.py
 ```
 In the "search" directory, run the following command:
 ```
-python baseline.py
+python NMVT_Baseline.py
 ```
 ## Notes
 - Narrative maps are visualized using [dash-cytoscape](https://github.com/plotly/dash-cytoscape).
