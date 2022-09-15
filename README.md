@@ -24,6 +24,28 @@ The current version of "narratives" and "search" are deployed in PythonAnywhere.
 
 **Please note that the deployment in PythonAnywhere is likely much more slow than running it in your own system.**
 
+## Running with custom data
+I added a specific option to run with Custom data in your local version. Simply create a "custom.csv" file, place it in the "data" folder, and select the "Custom" option in the data selection drop down in the main menu.
+
+The CSV file must have the following structure (columns):
+- id (numerical id, assumed integer, assumed 0-indexed in increasing order by date, so 0 is the first document in temporal order)
+- title (title, used for display in the map)
+- url (can be empty, but needs to exist as a column, if it exists a link will be added in the event details tab)
+- date (date of the document, can be a regular date or a date time)
+- publication (source of the document, in our case it's mostly news outlets either as a string or as a partial URL, but it can be anything in practice, if no specific logo is available for the source a blank marker is used in the map)
+- full_text (the full text of the document)
+- embedding (an embedding using the all-MiniLM-L6-v2 model from SentenceTransformers) - note that we can easily swap the model to a different one, but it requires generating all the pre-computed embeddings again for all data sets.
+
+If you have a data set with the first 6 columns (id, title, url, date, publication, full_text), you can generate the embeddings using the Jupyter notebook "Prepare_Embeddings.ipynb" available in the "preprocessing" folder. The Jupyter notebook has the following requirements:
+```
+ftfy==6.0.3
+numpy==1.21.2
+pandas==1.2.4
+sentence_transformers==2.2.2
+```
+
+**Please note that the data set must be sorted in ascending order by time and the id column must also align with that, otherwise there might be some issues.**
+
 ## Reproducibility
 - The seed is fixed for reproducibility, but the results will likely be different in each system (although consistent within it). I'm not sure if this can be fixed so that the same results can be obtained in all systems.
 - Sometimes the same result may look different due to the layout engine producing different results (probably due to random initliazation, not sure if that can be fixed)
