@@ -62,7 +62,7 @@ sentence_transformers==2.2.2
 - The connection explanation and event comparison functions use [SHAP](https://github.com/slundberg/shap) to generate explanations. This approach was adapted from [this implementation of text similarity explainable metrics](https://github.com/yg211/explainable-metrics). 
 
 ## Requirements
-Here is the list of requirements for the project.
+Here is the list of requirements for the project. Please note that everything has been implemented using Python 3.8.
 ```
 dash==2.6.0
 dash_bootstrap_components==1.0.0b3
