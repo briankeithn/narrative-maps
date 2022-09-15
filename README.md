@@ -8,7 +8,7 @@ This repository contains the following elements:
 
 The narrative maps algorithm and system is implemented based on the algorithm of [Keith and Mitra (2020)](https://dl.acm.org/doi/abs/10.1145/3432927) and follows the design guidelines of [Keith, Mitra, and North (2021)](https://journals.sagepub.com/doi/abs/10.1177/14738716221079593).
 
-## Running
+## Running locally
 In the "narratives" directory, run the following command:
 ```
 python NMVT.py
@@ -17,7 +17,23 @@ In the "search" directory, run the following command:
 ```
 python NMVT_Baseline.py
 ```
-## Notes
+## PythonAnywhere deployment
+The current version of "narratives" and "search" are deployed in PythonAnywhere. Use the following URLs:
+- Narrative Maps: https://briankeithn.pythonanywhere.com/
+- Baseline: https://search-briankeithn.pythonanywhere.com/
+
+**Please note that the deployment in PythonAnywhere is likely much more slow than running it in your own system.**
+
+## Reproducibility
+- The seed is fixed for reproducibility, but the results will likely be different in each system (although consistent within it). I'm not sure if this can be fixed so that the same results can be obtained in all systems.
+- Sometimes the same result may look different due to the layout engine producing different results (probably due to random initliazation, not sure if that can be fixed)
+
+## Performance and computational cost
+- The first execution of the narrative extraction method is probably going to be slow.
+- The first time you run a specific data set requires extra computation as it needs to generates some similarity tables and entity information that is then saved for later runs.
+- After that, the performance should stabilize.
+
+## Important libraries
 - Narrative maps are visualized using [dash-cytoscape](https://github.com/plotly/dash-cytoscape).
 - Optimization is done via linear programming using [PuLP](https://github.com/coin-or/pulp).
 - The connection explanation and event comparison functions use [SHAP](https://github.com/slundberg/shap) to generate explanations. This approach was adapted from [this implementation of text similarity explainable metrics](https://github.com/yg211/explainable-metrics). 
@@ -53,3 +69,10 @@ umap==0.1.1
 umap_learn==0.5.1
 torch==1.10.2
 ```
+
+## Issues and Bugs
+- Complex Maps: When the maps become too big or too complex to handle by the layout engine, there will be issues with the bounding boxes of the storyline (e.g., a big gray box that engulfs everything else). This seems to be an issue with the GraphViz/DOT engine that's running behind the scenes. It doesn't look like a limitation of Cytoscape. But I might be wrong.
+- Cluster Coloring: In some rare cases (I haven't been able to reproduce this yet), nodes that have been assigned to a specific cluster (e.g. "blue") get their color removed in the next iteration, despite still belonging to that cluster and still being used by the semantic interaction code as such. This is only a display issue, but it might be annoying.
+- PythonAnywhere: There might be some specific bugs that only occur in PythonAnywhere, particularly due to its slower response time. 
+
+Please let me know if you find anything else. 
