@@ -8,6 +8,15 @@ This repository contains the following elements:
 
 The narrative maps algorithm and system is implemented based on the algorithm of [Keith and Mitra (2020)](https://dl.acm.org/doi/abs/10.1145/3432927) and follows the design guidelines of [Keith, Mitra, and North (2021)](https://journals.sagepub.com/doi/abs/10.1177/14738716221079593).
 
+## Running
+In the "narratives" directory, run the following command:
+```
+python NMVT.py
+```
+In the "search" directory, run the following command:
+```
+python baseline.py
+```
 ## Notes
 - Narrative maps are visualized using [dash-cytoscape](https://github.com/plotly/dash-cytoscape).
 - Optimization is done via linear programming using [PuLP](https://github.com/coin-or/pulp).
@@ -20,7 +29,7 @@ dash==2.6.0
 dash_bootstrap_components==1.0.0b3
 dash_cytoscape==0.3.0
 dash_daq==0.5.0
-dash_extensions==0.1.5
+dash_extensions==0.1.6
 Flask==1.1.2
 ftfy==6.0.3
 hdbscan==0.8.27
