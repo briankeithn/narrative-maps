@@ -101,13 +101,13 @@ app.layout = html.Div([
         html.Button(className="map_btn", style={'background-image' : 'url("/static/remove_node.svg")'},
             title="Remove Event from Map", id='remove-node-button'),
         html.Button(className="map_btn",  style={'background-image' : 'url("/static/toggle_representative.svg")'},
-            title="Toggle Normal Event/Representative Landmark", id='antichain-button'),
+            title="Toggle Important Event", id='antichain-button'),
         html.Button(className="map_btn", style={'background-image' : 'url("/static/add_edge.svg")'},
             title="Add Connection", id='add-edge-button'),
         html.Button(className="map_btn", style={'background-image' : 'url("/static/remove_edge.svg")'},
             title="Remove Connection", id='remove-edge-button'),
         html.Button(className="map_btn", style={'background-image' : 'url("/static/toggle_main_route.svg")'},
-            title="Toggle Normal Connection/Main Route", id='main-route-button'),
+            title="Toggle Main Storyline", id='main-route-button'),
         html.Button(className="map_btn", style={'background-image' : 'url("/static/compare_events.svg")'},
             title="Compare Events", id='compare-nodes'),
         html.Button(className="map_btn", style={'background-image' : 'url("/static/explain_edge.svg")'},
@@ -526,12 +526,12 @@ def interact_with_graph(rmv_node, rmv_edge, add_edge, add_node, main_route, anti
                     else:
                         ele["data"]["search"] = "F"
                 elif search_value[0] == "*": # Only cares about the end of the words.
-                    if re.search(r"(\b|\s){}".format(re.escape(search_value.strip())), ele["data"]["full_text"], flags=re.IGNORECASE):
+                    if re.search(r"(\b|\s)(\w*?){}(\b|\s)".format(re.escape(search_value[1:].strip())), ele["data"]["full_text"], flags=re.IGNORECASE):
                         ele["data"]["search"] = "T"
                     else:
                         ele["data"]["search"] = "F"
                 elif search_value[-1] == "*": # Only cares about the start of the word.
-                    if re.search(r"{}(\b|\s)".format(re.escape(search_value.strip())), ele["data"]["full_text"], flags=re.IGNORECASE):
+                    if re.search(r"(\b|\s){}(\w*?)(\b|\s)".format(re.escape(search_value[:-1].strip())), ele["data"]["full_text"], flags=re.IGNORECASE):
                         ele["data"]["search"] = "T"
                     else:
                         ele["data"]["search"] = "F"
