@@ -1,10 +1,8 @@
 import pandas as pd
 import numpy as np
-#import random
 import os.path
 import pickle
 
-#np.seterr(all='raise')
 from ast import literal_eval
 from pulp import *
 from pulp import GLPK_CMD
@@ -16,11 +14,6 @@ import hdbscan
 from scipy.spatial import distance
 from urllib.parse import urlparse
 
-#import tensorflow as tf
-#import tensorflow_hub as hub
-#from ast import literal_eval
-#from operationsSI import add_node, add_edge, remove_node, remove_edge
-#from packages.MDS import WMDS, simulate_interaction, optimize_weights, graph_position_scaling
 from packages.globals import *
 from ftfy import fix_encoding
 from datetime import date, datetime, timezone
@@ -31,10 +24,284 @@ from sentence_transformers import SentenceTransformer
 import torch
 
 np.random.seed(42)
-#random.seed = 42
 start_time = None
 window_i_j = {}
 window_j_i = {}
+
+def create_RLP(query, sim_table, membership_vectors, clust_sim_table, exp_temp_table, ent_table, numclust, relevance_table,
+    K, mincover, sigma_t, credibility=[], bias=[], operations=[],
+    has_start=True, has_end=False, window_time=None, cluster_list=[], start_nodes=[], end_nodes=[],
+    verbose=True, force_cluster=True, previous_varsdict=None):
+    
+    n = len(query.index) #We can cut out everything after the end.
+    # Variable names and indices
+    var_i = []
+    var_ij = []
+    var_k = [str(k) for k in range(0,numclust)]
+
+    for i in range(0, n): # This goes up from 0 to n-1.
+        var_i.append(str(i))
+        for j in window_i_j[i]:
+            if i == j:
+                print("ERROR IN WINDOW - BASE")
+            var_ij.append(str(i) + "_" + str(j))
+
+    potential_edges = len(var_ij)
+    
+    # Linear program variable declaration.
+    minedge = LpVariable("minedge", lowBound = 0, upBound = 1)
+    node_act_vars = LpVariable.dicts("node_act", var_i, lowBound = 0, upBound = 1)
+    node_next_vars = LpVariable.dicts("node_next", var_ij, lowBound = 0,  upBound = 1)
+    clust_active_vars = LpVariable.dicts("clust_active", var_k, lowBound = 0, upBound = 1)
+
+    # Create the 'prob' variable to contain the problem data
+    prob = LpProblem("StoryChainProblem", LpMaximize)
+    # The objective function is added to 'prob' first
+    prob += minedge * potential_edges - lpSum([node_next_vars[ij] for ij in var_ij]), "WeakestLink"
+
+    # Check duplicates in interactions
+    replace = [False] * len(operations)
+    for idx, op in enumerate(operations):
+        op_ref = op.split(":",1)[1]
+        for k in range(idx):
+            if op_ref == operations[k].split(":",1)[1]:
+                replace[k] = True
+    # Fixtures.
+    min_threshold_edge = 0.1 / K
+    min_threshold_node = 0.4 / K
+    for idx, op in enumerate(operations):
+        op_ref = op.split(":",1)[1]
+        # Omit ACL in this part, handle separetely.
+        if "ACL" in op:
+            continue
+
+        temp = ""
+        if "-" in op_ref:
+            i = int(op_ref.split("-",1)[0])
+            j = int(op_ref.split("-",1)[1])
+            temp = str(i) + "_" + str(j)
+        else:
+            i = int(op_ref)
+            temp = str(i)
+        op_ref = temp
+
+        if "AN" in op:
+            if verbose:
+                print('AddedNode ' + str(op_ref))
+            if not replace[idx]:
+                if prob.constraints.get('RemovedNode' + str(op_ref)) is not None:
+                    del prob.constraints['RemovedNode' + str(op_ref)]
+                prob += node_act_vars[str(op_ref)] >= min_threshold_node, 'AddedNode' + str(op_ref) # Makes problem infeasible if we add too many, divide threhsold by K? By number of added constraints?
+        elif "AE" in op:
+            if verbose:
+                print('AddedEdge ' + str(op_ref))
+            if not replace[idx]:
+                if prob.constraints.get('RemovedEdge' + str(op_ref)) is not None:
+                    del prob.constraints['RemovedEdge' + str(op_ref)]
+                if str(op_ref) not in node_next_vars.keys():
+                    # Special case for time-based windows where the time difference is too big.
+                    # The connection does not exist by default and you need to add the variable manually for the specific edge.
+                    node_next_vars[str(op_ref)] = LpVariable("node_next_" + str(op_ref), lowBound=0, upBound=1)
+                    if i == j:
+                        print("ERROR IN WINDOW - AE")
+                    var_ij.append(str(op_ref))#str(i) + "_" + str(j))
+                    window_i_j[i].append(j)
+                    window_j_i[j].append(i)
+                prob += node_next_vars[str(op_ref)] >= min_threshold_edge, 'AddedEdge' + str(op_ref)
+        elif "RN" in op:
+            if verbose:
+                print('RemovedNode ' + str(op_ref))
+            if not replace[idx]:
+                if prob.constraints.get('AddedNode' + str(op_ref)) is not None:
+                    del prob.constraints['AddedNode' + str(op_ref)]
+                if prob.constraints.get('AddedNodeCluster' + str(op_ref)) is not None:
+                    del prob.constraints['AddedNodeCluster' + str(op_ref)]
+                prob += node_act_vars[str(op_ref)] == 0, 'RemovedNode' + str(op_ref)
+        elif "RE" in op:
+            if verbose:
+                print('RemovedEdge ' + str(op_ref))
+            if not replace[idx]:
+                if prob.constraints.get('AddedEdge' + str(op_ref)) is not None:
+                    del prob.constraints['AddedEdge' + str(op_ref)]
+                prob += node_next_vars[str(op_ref)] == 0, 'RemovedEdge' + str(op_ref)
+
+    if force_cluster:
+        #min_threshold_edge = 0.1 / K
+        #min_threshold_node = 0.4 / K
+        min_threshold_edge = 0.05
+        min_threshold_node = 0.01
+        for cluster in cluster_list:
+            cluster_sorted = sorted(cluster)
+            #print("Cluster:")
+            #print(cluster_sorted)
+            for idx, event in enumerate(cluster_sorted):
+                if verbose:
+                    print('AddedNodeCluster ' + str(event))
+                if prob.constraints.get('RemovedNode' + str(event)) is not None:
+                    del prob.constraints['RemovedNode' + str(event)]
+                if prob.constraints.get('AddedNodeCluster' + str(event)) is not None:
+                    del prob.constraints['AddedNodeCluster' + str(event)]
+
+                prob += node_act_vars[str(event)] >= min_threshold_node, 'AddedNodeCluster' + str(event)
+                #print("Filtered cluster " + str(cluster_sorted[(idx + 1):]))
+                if len(cluster_sorted[(idx + 1):]) >= 1:
+                    for j in cluster_sorted[(idx + 1):]:
+                        op_ref = str(event) + "_" + str(j)
+                        #print("Forced connections: " + str(op_ref))
+                        if str(op_ref) not in node_next_vars.keys():
+                            # Special case for time-based windows where the time difference is too big.
+                            # The connection does not exist by default and you need to add the variable manually for the specific edge.
+                            if event == j:
+                                print("ERROR IN WINDOW - ACL")
+                            node_next_vars[str(op_ref)] = LpVariable("node_next_" + str(op_ref), lowBound=0, upBound=1)
+                            var_ij.append(str(op_ref))
+                            window_i_j[event].append(j)
+                            window_j_i[j].append(event)
+                            #print(window_i_j[i])
+                            #print(window_j_i[i])
+                    prob += lpSum([node_next_vars[str(event) + "_" + str(j)] for j in cluster_sorted[(idx + 1):]]) >= min_threshold_edge, 'InternalEdgeCluster' + str(event)
+                    if verbose:
+                        print('InternalEdgeCluster' + str(event) + ":" + str(cluster_sorted[(idx + 1):]))
+    #for combination in itertools.combinations(cluster_list,2):
+    #    for node_i in combination[0]:
+    #        for node_j in combination[1]:
+    #            if int(node_i) < int(node_j):
+    #                prob += node_act_vars[str(op_ref)] >= min_threshold_node, 'AddedNode' + str(op_ref)
+
+    # Chain restrictions
+    if has_start:
+        num_starts = len(start_nodes)
+        if verbose:
+            print("Start node(s):")
+            print(start_nodes)
+        if num_starts == 0: # This is the default when no list is given and it has a start.
+            prob += node_act_vars[str(0)] == 1, 'InitialNode'
+        else:
+            if verbose:
+                print("Added start node(s)")
+                print("--- %s seconds ---" % (time() - start_time))
+            initial_energy = 1.0 / num_starts
+            earliest_start = min(start_nodes)
+            for node in start_nodes:
+                prob += node_act_vars[str(node)] == initial_energy, 'InitialNode' + str(node)
+            for node in range(0, earliest_start):
+                prob += node_act_vars[str(node)] == 0, 'BeforeStart' + str(node)
+    if has_end:
+        num_ends = len(end_nodes)
+        if verbose:
+            print("End node(s):")
+            print(end_nodes)
+        if num_ends == 0: # This is the default when no list is given and it has a start.
+            prob += node_act_vars[str(n - 1)] == 1, 'FinalNode'
+        else:
+            if verbose:
+                print("Added end node(s)")
+                print("--- %s seconds ---" % (time() - start_time))
+            final_energy = 1.0 / num_ends
+            latest_end = min(end_nodes)
+            for node in end_nodes:
+                prob += node_act_vars[str(node)] == final_energy, 'FinalNode' + str(node)
+            for node in range(latest_end + 1, n):
+                prob += node_act_vars[str(node)] == 0, 'AfterEnd' + str(node)
+
+    if verbose:
+        print("Chain constraints created.")
+        print("--- %s seconds ---" % (time() - start_time))
+    prob += lpSum([node_act_vars[i] for i in var_i]) == K, 'KNodes'
+    
+    if verbose:
+        print("Expected length constraints created.")
+        print("--- %s seconds ---" % (time() - start_time))
+
+
+    if has_start:
+        if verbose:
+            print("Equality constraints.")
+            print("--- %s seconds ---" % (time() - start_time))
+        for j in range(1, n):
+            if j not in start_nodes:
+                prob += lpSum([node_next_vars[str(i) + "_" + str(j)] for i in window_j_i[j]]) == node_act_vars[str(j)], 'InEdgeReq' + str(j)
+            else:
+                if verbose:
+                    print("Generating specific starting node constraints.")
+                    print("--- %s seconds ---" % (time() - start_time))
+                prob += lpSum([node_next_vars[str(i) + "_" + str(j)] for i in window_j_i[j]]) == 0, 'InEdgeReq' + str(j)
+    else:
+        if verbose:
+            print("Inequality constraints.")
+            print("--- %s seconds ---" % (time() - start_time))
+        for j in range(1, n):
+            prob += lpSum([node_next_vars[str(i) + "_" + str(j)] for i in window_j_i[j]]) <= node_act_vars[str(j)], 'InEdgeReq' + str(j)
+    if verbose:
+        print("In-degree constraints created.")
+        print("--- %s seconds ---" % (time() - start_time))
+
+    if has_end:
+        if verbose:
+            print("Equality constraints.")
+            print("--- %s seconds ---" % (time() - start_time))
+        for i in range(0, n - 1):
+            if i not in end_nodes:
+                prob += lpSum([node_next_vars[str(i) + "_" + str(j)] for j in window_i_j[i]]) == node_act_vars[str(i)], 'OutEdgeReq'  + str(i)
+            else:
+                if verbose:
+                    print("Generating specific starting node constraints.")
+                    print("--- %s seconds ---" % (time() - start_time))
+                prob += lpSum([node_next_vars[str(i) + "_" + str(j)] for j in window_i_j[i]]) == 0, 'OutEdgeReq'  + str(i)
+    else:
+        if verbose:
+            print("Inequality constraints.")
+            print("--- %s seconds ---" % (time() - start_time))
+        for i in range(0, n - 1):
+            prob += lpSum([node_next_vars[str(i) + "_" + str(j)] for j in window_i_j[i]]) <= node_act_vars[str(i)], 'OutEdgeReq'  + str(i)
+    if verbose:
+        print("Out-degree constraints created.")
+        print("--- %s seconds ---" % (time() - start_time))
+
+    # Coverage
+    if numclust > 1:
+        prob += lpSum([clust_active_vars[str(k)] for k in var_k]) >= numclust * mincover, "MinCover"
+        for k in range(0, numclust):
+            prob += clust_active_vars[str(k)] == lpSum([node_next_vars[str(i) + "_" + str(j)] * sqrt(membership_vectors[i, k] * membership_vectors[j, k]) for i in range(0, n - 1) for j in window_i_j[i]]), "CoverDef" + str(k)
+        if verbose:
+            print("Clustering constraints created.")
+            print("--- %s seconds ---" % (time() - start_time))
+    else:
+        if verbose:
+            print("No clustering constraints created - only 1 cluster.")
+            print("--- %s seconds ---" % (time() - start_time))
+
+    # Objective
+    for i in range(0, n):
+        for j in window_i_j[i]:
+            coherence_weights = [0.5, 0.5]
+            entity_multiplier = min(1 + ent_table[i, j], 2) # Five or more entities in common means double the connection strength.
+            relevance_multiplier = (relevance_table[i] * relevance_table[j]) ** 0.5 # Geometric mean the relevances, multiply based on how far it is from 0.5.
+            coherence = (sim_table[i, j] ** coherence_weights[0]) * (clust_sim_table[i, j] ** coherence_weights[1])
+            weighted_coherence = min(coherence * entity_multiplier * relevance_multiplier, 1.0)
+            prob += minedge <= 1 - node_next_vars[str(i) + "_" + str(j)] + weighted_coherence, "Objective" + str(i) + "_" + str(j)
+    if verbose:
+        print("Objective constraints created.")
+        print("--- %s seconds ---" % (time() - start_time))
+
+    if previous_varsdict:
+        current_names = [v.name for v in prob.variables() if "node_act" in v.name]
+        if verbose:
+            print("Generated list of names.")
+            print("--- %s seconds ---" % (time() - start_time))
+        for k, v in previous_varsdict.items():
+            if "node_act" in k and k in current_names:
+                node_act_vars[k.replace("node_act_", "")].setInitialValue(v)
+
+    if verbose:
+        if previous_varsdict:
+            print("Used previous solution as starting point.")
+            print("--- %s seconds ---" % (time() - start_time))
+        else:
+            print("No previous solution available.")
+            print("--- %s seconds ---" % (time() - start_time))
+    # The problem data is written to an .lp file
+    return prob
 
 def create_LP(query, sim_table, membership_vectors, clust_sim_table, exp_temp_table, ent_table, numclust, relevance_table,
     K, mincover, sigma_t, credibility=[], bias=[], operations=[],
@@ -515,7 +782,7 @@ def get_entity_table(query, dataset):
     np.save(filename, ent_table)
     return ent_table, ent_doc_list
 
-def solve_LP_from_query(query, dataset,
+def solve_LP(query, dataset,
     operations=[], K = 6, mincover=0.20,
     min_samples=2, min_cluster_size=2,
     n_neighbors=2, min_dist=0.01,
@@ -523,7 +790,9 @@ def solve_LP_from_query(query, dataset,
     start_nodes=[], end_nodes=[],
     verbose=True, random_state=42,
     force_cluster=True,
-    use_entities=True, use_temporal=True, strict_start=False, umap_init='spectral', cosine_sim = True):#, is_WMDS=False):
+    use_entities=True, use_temporal=True, 
+    use_regularization=False, strict_start=False, 
+    umap_init='spectral', cosine_sim = True):#, is_WMDS=False):
 
     global start_time
     start_time = time()
@@ -696,11 +965,18 @@ def solve_LP_from_query(query, dataset,
         with open(varsdict_filename, 'rb') as handle:
             previous_varsdict = pickle.load(handle)
 
-    prob = create_LP(query, sim_table, membership_vectors, clust_sim_table, exp_temp_table, ent_table, numclust, relevance_table,
-        K=K, mincover=mincover, sigma_t=sigma_t,
-        operations=operations, cluster_list=cluster_list,
-        has_start=has_start, has_end=has_end,
-        start_nodes=start_nodes, end_nodes=end_nodes, verbose=verbose, force_cluster=force_cluster, previous_varsdict=previous_varsdict)
+    if use_regularization:
+        prob = create_RLP(query, sim_table, membership_vectors, clust_sim_table, exp_temp_table, ent_table, numclust, relevance_table,
+            K=K, mincover=mincover, sigma_t=sigma_t,
+            operations=operations, cluster_list=cluster_list,
+            has_start=has_start, has_end=has_end,
+            start_nodes=start_nodes, end_nodes=end_nodes, verbose=verbose, force_cluster=force_cluster, previous_varsdict=previous_varsdict)
+    else:
+        prob = create_LP(query, sim_table, membership_vectors, clust_sim_table, exp_temp_table, ent_table, numclust, relevance_table,
+                K=K, mincover=mincover, sigma_t=sigma_t,
+                operations=operations, cluster_list=cluster_list,
+                has_start=has_start, has_end=has_end,
+                start_nodes=start_nodes, end_nodes=end_nodes, verbose=verbose, force_cluster=force_cluster, previous_varsdict=previous_varsdict)
     if verbose:
         print("Saving model...")
         print("--- %s seconds ---" % (time() - start_time))

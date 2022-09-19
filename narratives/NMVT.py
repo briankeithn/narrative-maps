@@ -7,7 +7,7 @@ import itertools
 from math import log, exp, sqrt
 
 # LP
-from packages.resolveLP import solve_LP_from_query, compute_sim, compute_sim_with_t
+from packages.solve_LP import solve_LP, compute_sim, compute_sim_with_t
 from packages.graph_utils import *
 from packages.data_utils import *
 from packages.globals import *
@@ -59,8 +59,9 @@ toggle_row_temp = html.Tr([html.Td("Penalize temporal distance in connections.")
 toggle_row_si = html.Tr([html.Td("Enable semantic interactions."), html.Td(daq.BooleanSwitch(id='use-si', on=True, color="lightblue"))])
 toggle_row_xai = html.Tr([html.Td("Enable explainable AI and connection explanation labels."), html.Td(daq.BooleanSwitch(id='use-xai', on=True, color="lightblue"))])
 toggle_row_names = html.Tr([html.Td("Enable storyline name extraction."), html.Td(daq.BooleanSwitch(id='use-names', on=True, color="lightblue"))])
-toggle_strict_start = html.Tr([html.Td("Enable strict start mode (only if a start event is provided)."), html.Td(daq.BooleanSwitch(id='strict-start', on=False, color="lightblue"))])
-toggle_table = dbc.Table([html.Tbody([toggle_row_ent, toggle_row_temp, toggle_row_si, toggle_row_xai, toggle_row_names, toggle_strict_start])], bordered=False, borderless=True, style={'vertical-align': 'middle'})
+toggle_regularization = html.Tr([html.Td("Enable regularization (requires start event)."), html.Td(daq.BooleanSwitch(id='use-regularization', on=False, color="lightblue"))])
+toggle_strict_start = html.Tr([html.Td("Enable strict start mode (requires start event)."), html.Td(daq.BooleanSwitch(id='strict-start', on=False, color="lightblue"))])
+toggle_table = dbc.Table([html.Tbody([toggle_row_ent, toggle_row_temp, toggle_row_si, toggle_row_xai, toggle_row_names, toggle_regularization, toggle_strict_start])], bordered=False, borderless=True, style={'vertical-align': 'middle'})
 
 # Files
 # dataset = "cv"
@@ -436,12 +437,14 @@ def update_data_table(query):
                State('use-si', 'on'),
                State('use-xai', 'on'),
                State('use-names', 'on'),
+               State('use-regularization', 'on'),
                State('strict-start', 'on')
               ], prevent_initial_call=True)
 def interact_with_graph(rmv_node, rmv_edge, add_edge, add_node, main_route, anti_chain, recompute_lp, add_cluster_list, search_btn, search_enter_key, query,
                         elements, nodes, edges, k_input, mincover_input, sigma_t,# trans_reduce,
                         dataset, cluster_value, search_value, similar_input,
-                        selected_rows_table, selected_cells, scatter_fig, execution_id, xai_tab, overview_tab, previous_actions, use_entities, use_temporal, use_si, use_xai, use_names, strict_start):#, rep_landmark_mode):
+                        selected_rows_table, selected_cells, scatter_fig, execution_id, xai_tab, overview_tab, previous_actions,
+                        use_entities, use_temporal, use_si, use_xai, use_names, use_regularization, strict_start):#, rep_landmark_mode):
     ctx = dash.callback_context
     if not ctx.triggered:
         button_id = 'No clicks yet'
@@ -659,12 +662,12 @@ def interact_with_graph(rmv_node, rmv_edge, add_edge, add_node, main_route, anti
             start_nodes = [selected_rows_table[0]]
             # If this is not the case then there are zero rows selected.
         min_dist = 0.0
-        graph_df_new, status, scatter_df, sim_table, clust_sim_table, ent_table, ent_doc_list, cluster_assignment = solve_LP_from_query(query,
+        graph_df_new, status, scatter_df, sim_table, clust_sim_table, ent_table, ent_doc_list, cluster_assignment = solve_LP(query,
                 dataset=str(dataset), operations=operation_list,
                 K=k_input, mincover=mincover_input/100, sigma_t=sigma_t,
                 min_samples=2, min_cluster_size=cluster_size_est, n_neighbors=n_neighbors, min_dist=min_dist,
                 start_nodes=start_nodes, end_nodes=end_nodes, umap_init=init,
-                use_entities=use_entities, use_temporal=use_temporal, strict_start=strict_start)
+                use_entities=use_entities, use_temporal=use_temporal, strict_start=strict_start, use_regularization=use_regularization)
         status_msg = "LP Status: " + status[1] + ", Clusters: " + str(status[0])# + ", Storylines: " + str(numstories)
 
         if 'Optimal' in status[1]:
