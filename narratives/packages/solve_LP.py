@@ -998,7 +998,7 @@ def solve_LP(query, dataset,
         print("Graph data frame construction...")
         print("--- %s seconds ---" % (time() - start_time))
 
-    if strict_start:
+    if strict_start and has_start:
         graph_df = graph_clean_up(graph_df, start_nodes)
 
     if verbose:
