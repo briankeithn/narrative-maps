@@ -7,6 +7,7 @@ This repository contains the following elements:
 3. Testing data sets ("data" folder).
 4. Custom data preparation ("preprocessing" folder, see below for details).
 5. Tutorial and examples ("tutorial" folder), see the detailed tutorial [here](https://github.com/briankeithn/narrative-maps/blob/main/tutorial/TUTORIAL.md).
+6. Simulation-based evaluations ("tests" folder), see the notebooks for details.
 
 The narrative maps algorithm and system is implemented based on the algorithm of [Keith and Mitra (2020)](https://dl.acm.org/doi/abs/10.1145/3432927) and follows the design guidelines of [Keith, Mitra, and North (2021)](https://journals.sagepub.com/doi/abs/10.1177/14738716221079593).
 
