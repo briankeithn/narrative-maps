@@ -131,12 +131,14 @@ def create_LP(query, sim_table, membership_vectors, clust_sim_table, exp_temp_ta
                 prob += node_next_vars[str(op_ref)] == 0, 'RemovedEdge' + str(op_ref)
 
     if force_cluster:
+        #min_threshold_edge = 0.1 / K
+        #min_threshold_node = 0.4 / K
         min_threshold_edge = 0.05
         min_threshold_node = 0.01
         for cluster in cluster_list:
             cluster_sorted = sorted(cluster)
-            print("Cluster:")
-            print(cluster_sorted)
+            #print("Cluster:")
+            #print(cluster_sorted)
             for idx, event in enumerate(cluster_sorted):
                 if verbose:
                     print('AddedNodeCluster ' + str(event))
@@ -146,11 +148,11 @@ def create_LP(query, sim_table, membership_vectors, clust_sim_table, exp_temp_ta
                     del prob.constraints['AddedNodeCluster' + str(event)]
 
                 prob += node_act_vars[str(event)] >= min_threshold_node, 'AddedNodeCluster' + str(event)
-                print("Filtered cluster " + str(cluster_sorted[(idx + 1):]))
+                #print("Filtered cluster " + str(cluster_sorted[(idx + 1):]))
                 if len(cluster_sorted[(idx + 1):]) >= 1:
                     for j in cluster_sorted[(idx + 1):]:
                         op_ref = str(event) + "_" + str(j)
-                        print("Forced connections: " + str(op_ref))
+                        #print("Forced connections: " + str(op_ref))
                         if str(op_ref) not in node_next_vars.keys():
                             # Special case for time-based windows where the time difference is too big.
                             # The connection does not exist by default and you need to add the variable manually for the specific edge.
@@ -395,7 +397,7 @@ def graph_clean_up(graph_df, start_nodes=[]):
     return graph_df
 
 
-def compute_sim(query, min_dist=0.0):#, is_WMDS=False):
+def compute_sim(query, min_dist=0.0, cosine_sim = True):#, is_WMDS=False):
     doc_list = []
     for index, article in query.iterrows():
         doc_list.append(article['embed'])
@@ -418,7 +420,6 @@ def compute_sim(query, min_dist=0.0):#, is_WMDS=False):
     random_state = 42
     clusterable_embedding = umap.UMAP(n_neighbors=n_neighbors, min_dist=min_dist, init=init, random_state=np.random.RandomState(random_state)).fit_transform(X)
 
-    cosine_sim = True
     if cosine_sim:
         similarities = np.clip(cosine_similarity(clusterable_embedding), -1 , 1)
         # Force normalize
@@ -471,7 +472,6 @@ def get_entity_table(query, dataset):
     n = len(query.index)
     filename = dataset + '.npy'
     if os.path.isfile(filename):
-        print("Entity table already exists.")
         ent_table = np.load(filename)
         with open(dataset + '.pickle', 'rb') as handle:
             ent_doc_list = pickle.load(handle)
@@ -516,15 +516,14 @@ def get_entity_table(query, dataset):
     return ent_table, ent_doc_list
 
 def solve_LP_from_query(query, dataset,
-    operations=[], focus_query="",
-    window_time=None, K = 6, mincover=0.20,
+    operations=[], K = 6, mincover=0.20,
     min_samples=2, min_cluster_size=2,
-    n_neighbors=2, min_dist=0.0,
+    n_neighbors=2, min_dist=0.01,
     sigma_t = 30,
-    cred_check=False, start_nodes=[], end_nodes=[],
+    start_nodes=[], end_nodes=[],
     verbose=True, random_state=42,
     force_cluster=True,
-    use_entities=True, use_temporal=True, strict_start=False, umap_init='spectral'):#, is_WMDS=False):
+    use_entities=True, use_temporal=True, strict_start=False, umap_init='spectral', cosine_sim = True):#, is_WMDS=False):
 
     global start_time
     start_time = time()
@@ -555,20 +554,9 @@ def solve_LP_from_query(query, dataset,
     if verbose:
         print("Cluster List (base) " + str(cluster_list))
 
-    #if is_WMDS:
-    #    clusterable_embedding, X_scaled = WMDS(X)
-    #else:
-    print("UMAP Initialization: " + str(umap_init))
     clusterable_embedding = umap.UMAP(n_neighbors=n_neighbors,  min_dist=min_dist, init=umap_init, random_state=np.random.RandomState(random_state)).fit_transform(X)
-    #print(clusterable_embedding)
+    
     if len(cluster_list) > 0:
-        #if is_WMDS:
-        #    subset_X_2d, subset_X_scaled = simulate_interaction(clusterable_embedding, X_scaled, cluster_list)
-        #    weights = np.ones(subset_X_scaled.shape[1]) / subset_X_scaled.shape[1]
-        #    weights, objectives, gradients, n_iter = optimize_weights(subset_X_2d, subset_X_scaled, weights, alpha=0.001, max_iter=10000, epsilon=1e-5, L=0.0, threshold=1e-5)
-        #    weights = weights / np.sum(weights)
-        #    clusterable_embedding, X_scaled = WMDS(X, weights)
-        #else:
         target = -np.ones(X.shape[0])
         for clust_idx, cluster in enumerate(cluster_list):
             target[cluster] = clust_idx
@@ -577,7 +565,6 @@ def solve_LP_from_query(query, dataset,
         print("Computed projection.")
         print("--- %s seconds ---" % (time() - start_time))
 
-    cosine_sim = True
     if cosine_sim:
         similarities = np.clip(cosine_similarity(clusterable_embedding), -1 , 1)
         # Force normalize
@@ -600,8 +587,7 @@ def solve_LP_from_query(query, dataset,
     if verbose:
         print("Computed similarities.")
         print("--- %s seconds ---" % (time() - start_time))
-    #with open('embed_' + dataset + '.npy', 'wb') as f:
-    #    np.save(f, sim_table, allow_pickle=True)
+
 
     hdbscan_model = hdbscan.HDBSCAN(min_samples=min_samples,min_cluster_size=min_cluster_size,prediction_data=True)
     labels = hdbscan_model.fit_predict(clusterable_embedding)
@@ -611,12 +597,6 @@ def solve_LP_from_query(query, dataset,
     if verbose:
         print("Computed clustering.")
         print("--- %s seconds ---" % (time() - start_time))
-    #if 'cluster_vec' in query.columns:
-    #    print("Pre-computed clusters.")
-    #    cluster_vec_list = []
-    #    for index, article in query.iterrows():
-    #        cluster_vec_list.append(article['cluster_vec'])
-    #    membership_vectors = np.array(cluster_vec_list)
 
     if len(membership_vectors.shape) > 1:
         numclust = membership_vectors.shape[1]
@@ -686,8 +666,10 @@ def solve_LP_from_query(query, dataset,
     if not use_entities:
         ent_table = np.zeros(ent_table.shape)
 
-    relevance_table = [1.0] * membership_vectors.shape[0] # Create a vector full of 1s.
-    if focus_query:
+    # Deprecated relevance table computation
+    relevance_table = [1.0] * membership_vectors.shape[0] # Create a vector full of 1s
+    focus_query = None
+    if focus_query: # Uses focus_query (string)
         #torch.cuda.empty_cache()
         model = SentenceTransformer('all-MiniLM-L6-v2')
         q = model.encode(focus_query)
@@ -696,13 +678,10 @@ def solve_LP_from_query(query, dataset,
         euc_dist = (euc_dist - np.min(euc_dist)) / (np.max(euc_dist) - np.min(euc_dist))
         sim_list = 1 - euc_dist
         relevance_table = sim_list[0] # Remove one dimension.
+        if verbose:
+            print("Computed query relevance table.")
+            print("--- %s seconds ---" % (time() - start_time))
 
-    if verbose:
-        print("Computed query relevance table.")
-        print("--- %s seconds ---" % (time() - start_time))
-
-    cred = {'default': 1.0}
-    pol_orientation = {'default': 'default'}
     has_start = False
     if start_nodes is not None:
         has_start = (len(start_nodes) > 0)
@@ -721,7 +700,7 @@ def solve_LP_from_query(query, dataset,
         K=K, mincover=mincover, sigma_t=sigma_t,
         operations=operations, cluster_list=cluster_list,
         has_start=has_start, has_end=has_end,
-        window_time=window_time, start_nodes=start_nodes, end_nodes=end_nodes, verbose=verbose, force_cluster=force_cluster, previous_varsdict=previous_varsdict)
+        start_nodes=start_nodes, end_nodes=end_nodes, verbose=verbose, force_cluster=force_cluster, previous_varsdict=previous_varsdict)
     if verbose:
         print("Saving model...")
         print("--- %s seconds ---" % (time() - start_time))

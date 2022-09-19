@@ -631,9 +631,7 @@ def interact_with_graph(rmv_node, rmv_edge, add_edge, add_node, main_route, anti
                         operation_list.append("RE:" + str(edge))
                 elif item.get("action") == "add-cluster-list":
                      operation_list.append("ACL:" + str(item['content'][0]) + "-" + str(item['content'][1]))
-        window = None
         # Solve LP and create new graph_df.
-        cred_check_bool = False#('T' in cred_check)
         cluster_size_est = np.sqrt(len(query.index))/2
         cluster_size_est = 5 * round(cluster_size_est / 5) # Round to nearest multiple of 5
 
@@ -662,10 +660,10 @@ def interact_with_graph(rmv_node, rmv_edge, add_edge, add_node, main_route, anti
             # If this is not the case then there are zero rows selected.
         min_dist = 0.0
         graph_df_new, status, scatter_df, sim_table, clust_sim_table, ent_table, ent_doc_list, cluster_assignment = solve_LP_from_query(query,
-                dataset=str(dataset), operations=operation_list, window_time=window,
+                dataset=str(dataset), operations=operation_list,
                 K=k_input, mincover=mincover_input/100, sigma_t=sigma_t,
                 min_samples=2, min_cluster_size=cluster_size_est, n_neighbors=n_neighbors, min_dist=min_dist,
-                cred_check=cred_check_bool, start_nodes=start_nodes, end_nodes=end_nodes, umap_init=init,
+                start_nodes=start_nodes, end_nodes=end_nodes, umap_init=init,
                 use_entities=use_entities, use_temporal=use_temporal, strict_start=strict_start)
         status_msg = "LP Status: " + status[1] + ", Clusters: " + str(status[0])# + ", Storylines: " + str(numstories)
 
@@ -760,7 +758,7 @@ def interact_with_graph(rmv_node, rmv_edge, add_edge, add_node, main_route, anti
                 for u, v, data in G.out_edges(node, data=True):
                     G[u][v]['weight'] = -log(exp(-data['weight']) / sum_node)
                 sum_node = sum([exp(-G[u][v]['weight']) for u, v, data in G.out_edges(node, data=True)])
-                # Update graph_df
+            # Update graph_df
             for i, row in graph_df_new.iterrows():
                 new_adj_list = [v for u, v in G.out_edges(str(row['id']))]
                 new_adj_weights = [exp(-G[u][v]['weight']) for u, v in G.out_edges(str(row['id']))]
