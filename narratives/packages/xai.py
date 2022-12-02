@@ -4,6 +4,7 @@ import truecase
 import math
 import networkx as nx
 import json
+import matplotlib.pyplot as plt
 from math import log, exp, pi
 from packages.globals import *
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -32,6 +33,95 @@ def change_shap_base_value(base_value, new_base_value, shap_values) -> np.ndarra
     idx = np.diag_indices_from(shap_values[0])
     shap_values[:, idx[0], idx[1]] += temp
     return shap_values
+
+def similarity_plot(shap_values, features, topn=10):
+    # Change the base value to 0.5 (mid similarity)
+    expected_value = shap_values.base_values[0]
+    shap_values.values = change_shap_base_value(expected_value, 0.0, shap_values.values)
+    shap_values.base_values[0] = 0.0
+    
+    # Get lists of values, features, and positions
+    values = list(shap_values.values[0])
+    feature_names = list(features.iloc[0].values)
+    feature_col_names = list(features.columns)
+
+
+    # Remove punctuation from results (parallel removal)
+    zipped_lists = zip(feature_names, feature_col_names, values)
+    # Check if word CONTAINS alpha numeric (handles n't case).
+    feature_names, feature_col_names, values = zip(*[list(t) for t in zipped_lists if any(letter.isalnum() for letter in str(t[0]))])
+    
+    # Remove stop words from results (parallel removal)
+    zipped_lists = zip(feature_names, feature_col_names, values)
+    # Check stop words
+    feature_names, feature_col_names, values = zip(*[list(t) for t in zipped_lists if str(t[0]).strip().lower() not in all_stopwords])
+    # Create final feature names (word + sentenee position)
+    final_feature_names = [i + " (" + j + ")" for i, j in zip(feature_names, feature_col_names)]
+    # Turn back values to np array.
+    values = np.array(values)
+
+    # Separate positive and negative features
+    positive_mask = values > 0
+    mask = np.array(positive_mask, dtype=bool)
+    positive_features = np.array(final_feature_names)[mask].flatten().tolist()
+    negative_features = np.array(final_feature_names)[~mask].flatten().tolist()
+    positive_values = values[mask].flatten().tolist()
+    negative_values = values[~mask].flatten().tolist()
+    
+    # Sort positive values and features in parallel
+    if positive_values:
+        zipped_lists = zip(positive_features, positive_values)
+        sorted_pairs = sorted(zipped_lists, key = lambda x: x[1])
+        tuples = zip(*sorted_pairs)
+        positive_features, positive_values = [list(t) for t in tuples]
+    
+    # Sort negative values and features in parallel
+    if negative_values:
+        zipped_lists = zip(negative_features, negative_values)
+        sorted_pairs = sorted(zipped_lists, key = lambda x: x[1])
+        tuples = zip(*sorted_pairs)
+        negative_features, negative_values = [list(t) for t in tuples]
+    
+    # Select top n features for positive and negative
+    positive_features = positive_features[-min(topn, len(positive_values)):]
+    positive_values = positive_values[-min(topn, len(positive_values)):]
+    negative_features = negative_features[:min(topn, len(negative_values))]
+    negative_values = negative_values[:min(topn, len(negative_values))]
+    
+    # Create plot
+    fig, host = plt.subplots(figsize=(12,8))
+    par1 = host.twinx()
+    max_axis = max(abs(min(negative_values)), max(positive_values))
+    host.set_xlim(-max_axis * 1.2, max_axis * 1.2)
+    
+    # Axis labels
+    host.set_xlabel("Keyword Importance", fontsize=20)
+    #host.xaxis.set_label_coords(0.5,1.05)
+    host.set_ylabel("Negative", fontsize=20)
+    host.yaxis.set_label_coords(0.05,0.5)
+    par1.set_ylabel("Positive", fontsize=20)
+    par1.yaxis.set_label_coords(0.95,0.5)
+
+    # Axis limits
+    n_pos = len(positive_values)
+    n_neg = len(negative_values)
+    n_max = max(n_pos, n_neg)
+    host.set_ylim(-1, n_max)
+    host.invert_yaxis()
+    par1.set_ylim(-1, n_max)
+    
+    # Generate actual bar plots
+    p1 = host.barh(negative_features, negative_values, color='darkred')
+    host.bar_label(p1, labels=[f'{-1*x:,.3f}' for x in p1.datavalues], label_type='edge', fontsize=14, color='k', padding=5)
+    p2 = par1.barh(positive_features, positive_values, color='green')
+    par1.bar_label(p2, labels=[f'{x:,.3f}' for x in p2.datavalues], label_type='edge', fontsize=14, color='k', padding=5)
+    # Return figure
+    
+    plt.title("Top 10 Positive and Negative Keywords", fontsize=24)
+    host.tick_params(labelsize=14)
+    par1.tick_params(labelsize=14)
+    fig.tight_layout()
+    return fig
 
 def preprocess_text(documents):
     cleaned_documents = [doc.lower() for doc in documents]
@@ -240,7 +330,7 @@ def sim_explanation(s1, s2):
     sts_explain_model = ExplainableSTS('minilm', MAX_LENGTH=30)
     sim_score = sts_explain_model(s1, s2)
     # Get the explanation
-    values = sts_explain_model.explain(s1, s2, plot=False)
+    values = sts_explain_model.explain(s1, s2)
     return values
 
 
@@ -295,7 +385,7 @@ def add_connection_types(query, graph_df, sim_table, clust_sim_table, ent_table,
             #scores = sp.csr_matrix(scores)
             top_n_max = 10
             top_n = min(top_n_max, len(no_stop_words))
-            final_word_list = [word_score[0] + " (" + str(round(word_score[1], 2)) + ")" for word_score in no_stop_words[:top_n]]
+            final_word_list = [word_score[0] + " (" + str(round(100 * word_score[1], 1)) + "%)" for word_score in no_stop_words[:top_n]]
             results = ", ".join(final_word_list)
             cluster_description.append(results)#[w for w in top_n if w not in all_stopwords])
         else:

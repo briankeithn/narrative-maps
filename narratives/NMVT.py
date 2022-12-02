@@ -55,11 +55,11 @@ app = DashProxy(#dash.Dash(
 app.title = 'Narrative Maps Visualization Tool'
 
 toggle_row_ent = html.Tr([html.Td("Emphasize common entities in connections."), html.Td(daq.BooleanSwitch(id='use-entities', on=False, color="lightblue"))])
-toggle_row_temp = html.Tr([html.Td("Penalize temporal distance in connections."), html.Td(daq.BooleanSwitch(id='use-temporal', on=False, color="lightblue"))])
+toggle_row_temp = html.Tr([html.Td("Penalize temporal distance in connections."), html.Td(daq.BooleanSwitch(id='use-temporal', on=True, color="lightblue"))])
 toggle_row_si = html.Tr([html.Td("Enable semantic interactions."), html.Td(daq.BooleanSwitch(id='use-si', on=True, color="lightblue"))])
 toggle_row_xai = html.Tr([html.Td("Enable explainable AI and connection explanation labels."), html.Td(daq.BooleanSwitch(id='use-xai', on=True, color="lightblue"))])
 toggle_row_names = html.Tr([html.Td("Enable storyline name extraction."), html.Td(daq.BooleanSwitch(id='use-names', on=True, color="lightblue"))])
-toggle_regularization = html.Tr([html.Td("Enable regularization (requires start event)."), html.Td(daq.BooleanSwitch(id='use-regularization', on=False, color="lightblue"))])
+toggle_regularization = html.Tr([html.Td("Enable regularization (requires start event)."), html.Td(daq.BooleanSwitch(id='use-regularization', on=True, color="lightblue"))])
 toggle_strict_start = html.Tr([html.Td("Enable strict start mode (requires start event)."), html.Td(daq.BooleanSwitch(id='strict-start', on=False, color="lightblue"))])
 toggle_table = dbc.Table([html.Tbody([toggle_row_ent, toggle_row_temp, toggle_row_si, toggle_row_xai, toggle_row_names, toggle_regularization, toggle_strict_start])], bordered=False, borderless=True, style={'vertical-align': 'middle'})
 
@@ -82,13 +82,14 @@ app.layout = html.Div([
             options=[{'label':'Coronavirus Data', 'value': 'cv'},
                     {'label':'Papers', 'value': 'papers'},
                     {'label':'Cuban Protests (Full)', 'value': 'cuba'},
-                    {'label':'Cuban Protests (Small)', 'value': 'cuba_small'},
+                    #{'label':'Cuban Protests (Small)', 'value': 'cuba_small'},
                     {'label':'Cuban Protests (160)', 'value': 'cuba_160'},
                     {'label':'Crescent', 'value': 'crescent'},
-                    {'label':'Custom', 'value': 'custom'}],
+                    {'label':'Custom', 'value': 'custom'}
+                    ],
             optionHeight=50,
             style={'width': '150px', 'margin-right': '5px'},
-            value='cv',
+            value='cuba_160',
             clearable=False),
         html.Button(className="map_btn",
                     style={'background-image' : 'url("/static/load_icon.svg")'},
@@ -101,43 +102,43 @@ app.layout = html.Div([
             title="Add Event to Map", id='add-node-button'),
         html.Button(className="map_btn", style={'background-image' : 'url("/static/remove_node.svg")'},
             title="Remove Event from Map", id='remove-node-button'),
-        html.Button(className="map_btn",  style={'background-image' : 'url("/static/toggle_representative.svg")'},
-            title="Toggle Important Event", id='antichain-button'),
+        #html.Button(className="map_btn",  style={'background-image' : 'url("/static/toggle_representative.svg")'},
+        #    title="Toggle Important Event", id='antichain-button'),
         html.Button(className="map_btn", style={'background-image' : 'url("/static/add_edge.svg")'},
             title="Add Connection", id='add-edge-button'),
         html.Button(className="map_btn", style={'background-image' : 'url("/static/remove_edge.svg")'},
             title="Remove Connection", id='remove-edge-button'),
-        html.Button(className="map_btn", style={'background-image' : 'url("/static/toggle_main_route.svg")'},
-            title="Toggle Main Storyline", id='main-route-button'),
+        #html.Button(className="map_btn", style={'background-image' : 'url("/static/toggle_main_route.svg")'},
+        #    title="Toggle Main Storyline", id='main-route-button'),
+        html.Button(className="map_btn", style={'background-image' : 'url("/static/add_storyline.svg")'},
+            title="Add Event to Cluster", id='add-cluster-list'),
+        dcc.Dropdown(id="cluster-value",
+            options=[{'label':str(k) + " (" + color_cluster[k - 1].capitalize() + ")", 'value': k} for k in range(1,len(color_cluster) + 1)],
+            value=1, clearable=False, searchable=False, style={'width': '120px', 'margin-right': '5px'}),
         html.Button(className="map_btn", style={'background-image' : 'url("/static/compare_events.svg")'},
             title="Compare Events", id='compare-nodes'),
         html.Button(className="map_btn", style={'background-image' : 'url("/static/explain_edge.svg")'},
             title="Explain Edge", id='explain-edge'),
-        html.Button(className="map_btn", style={'background-image' : 'url("/static/add_storyline.svg")'},
-            title="Add Event to Cluster", id='add-cluster-list'),
-        dcc.Dropdown(id="cluster-value",
-            options=[{'label':str(k) + " (" + color_cluster[k - 1] + ")", 'value': k} for k in range(1,11)],
-            value="1", clearable=False, searchable=False, style={'width': '120px', 'margin-right': '5px'}),
         #html.Button(className="map_btn", style={'background-image' : 'url("/static/save_svg_icon.svg")'},
         #    title="Download as SVG", id='get-svg-button'),
-        html.Button(className="map_btn", style={'background-image' : 'url("/static/save_png_icon.svg")'},
-            title="Download as PNG", id='get-png-button'),
-        html.Button(className="map_btn", style={'background-image' : 'url("/static/save_json_icon.svg")'},
-            title="Download as JSON", id='save-button'),
-        html.Button(className="map_btn", style={'background-image' : 'url("/static/zoom_in.svg")'},
-            title="Zoom In", id='zoom-in-button'),
-        html.Button(className="map_btn", style={'background-image' : 'url("/static/zoom_out.svg")'},
-            title="Zoom Out", id='zoom-out-button'),
-        html.Button(className="map_btn", style={'background-image' : 'url("/static/zoom_reset.svg")'},
-            title="Reset Zoom", id='zoom-reset-button'),
+        #html.Button(className="map_btn", style={'background-image' : 'url("/static/save_png_icon.svg")'},
+        #    title="Download as PNG", id='get-png-button'),
+        #html.Button(className="map_btn", style={'background-image' : 'url("/static/save_json_icon.svg")'},
+        #    title="Download as JSON", id='save-button'),
+        #html.Button(className="map_btn", style={'background-image' : 'url("/static/zoom_in.svg")'},
+        #    title="Zoom In", id='zoom-in-button'),
+        #html.Button(className="map_btn", style={'background-image' : 'url("/static/zoom_out.svg")'},
+        #    title="Zoom Out", id='zoom-out-button'),
+        #html.Button(className="map_btn", style={'background-image' : 'url("/static/zoom_reset.svg")'},
+        #    title="Reset Zoom", id='zoom-reset-button'),
         #html.Button(className="map_btn", style={'background-image' : 'url("/static/pan_reset.svg")'},
         #    title="Reset Panning", id='pan-reset-button'),
-        html.Span("K", style={'fontSize': 12, 'fontWeight': 'bold', 'margin-right': '5px'}),
+        html.Span("Map Size", style={'fontSize': 12, 'fontWeight': 'bold', 'margin-right': '5px'}),
         dcc.Input(
-            id="k-input", type="number", value=8,
-            min=2, max=25, step=1, style={'width': '50px', 'margin-right': '5px'}
+            id="k-input", type="number", value=6,
+            min=2, max=25, step=1, style={'width': '70px', 'margin-right': '5px'}
         ),
-        html.Span("mincover", style={'fontSize': 12, 'fontWeight': 'bold', 'margin-right': '5px'}),
+        html.Span("Coverage %", style={'fontSize': 12, 'fontWeight': 'bold', 'margin-right': '5px'}),
         dcc.Input(
             id="min-cover-input", type="number", value=20,
             min=0, max=100, step=1, style={'width': '60px','margin-right': '5px'}
@@ -172,12 +173,6 @@ app.layout = html.Div([
             type="default",
             fullscreen=True,
             style={ 'backgroundColor': '#FFFFFF50'}, children=html.Div('', id="comparing-node-output")
-        ),
-        dcc.Loading(
-            id="explaining-edge",
-            type="default",
-            fullscreen=True,
-            style={ 'backgroundColor': '#FFFFFF50'}, children=html.Div('', id="explaining-edge-output")
         ),
         dcc.Loading(
             id="resetting-table",
@@ -217,13 +212,13 @@ app.layout = html.Div([
             dcc.Tab(label='Overview', value="0", style={'padding': '0', 'font-size': '0.7vw', 'display': 'flex', 'align-items': 'center', 'justify-content': 'center', 'word-spacing': '100vw'}, selected_style={'padding': '0', 'font-size': '0.7vw', 'display': 'flex', 'align-items': 'center', 'justify-content': 'center', 'word-spacing': '100vw'}, children=[
                 html.Div(id='overview-tab', style=styles['tab'], children=[
                     html.Div('This tab provides an overview of the data set through its topic and most relevant entities. It also contains a 2D visualization of the document space and the main storyline of the map as it navigates through this space.'),
-                    html.Label('Document Space', style={'fontSize': 14, 'font-weight': 'bold', 'text-decoration': 'underline'}),
+                    html.Label('Document Space', style={'fontSize': 16, 'font-weight': 'bold', 'text-decoration': 'underline'}),
                     html.Div('Visualize the documents in a 2D projection. Documents are clustered according to their topics/similarity. The main storyline of the narrative map is shown with arrows.'),
                     dcc.Graph(id='scatter-fig'),
                     html.Div(id='overview-tab-internal', children=[
-                        html.Div('Topic list', style={'fontSize': 14, 'fontWeight': 'bold', 'text-decoration': 'underline'}),
+                        html.Div('Topic list', style={'fontSize': 16, 'fontWeight': 'bold', 'text-decoration': 'underline'}),
                         html.Div('Generate the map to extract the topics.'),
-                        html.Div('Entity list', style={'fontSize': 14, 'fontWeight': 'bold', 'text-decoration': 'underline'}),
+                        html.Div('Entity list', style={'fontSize': 16, 'fontWeight': 'bold', 'text-decoration': 'underline'}),
                         html.Div('Generate the map to extract the entities.')
                     ])
                 ]),
@@ -288,6 +283,7 @@ app.layout = html.Div([
                         filter_action='native',
                         page_current=0,
                         page_size=20,
+                        selected_row_ids=[0],
                         page_action='native',
                         columns=[{"name": i, "id": i} for i in query.loc[:,['id', 'date','title']]]
                     )
@@ -299,26 +295,26 @@ app.layout = html.Div([
                     html.Label('Display Similar Documents', style={'font-weight': 'bold'}),
                     html.Label('For each document in the narrative map, the top N most similar documents will be displayed as gray circles close to it.'),
                     dcc.Input(id='similar-input',  type='number', min=0, max=15, step=1, value=2, style = {'width': "150px", 'margin-right': '5px'}),
-                    html.Label('Filter by Dates', style={'font-weight': 'bold'}),
-                    html.Label('Filter the data set using a date range.'),
-                    dcc.DatePickerRange(
-                        id='date-range',
-                        minimum_nights=1,
-                        clearable=True,
-                        with_portal=False,
-                        start_date_placeholder_text="Start Date",
-                        end_date_placeholder_text="End Date",
-                        start_date=date(1990, 1, 1),
-                        end_date=date(2030, 1, 1),
-                        style = {'width': '100%',
-                                'marginRight': '15px',
-                                'padding': '10px 5px',
-                                'borderRadius': '4px'
-                                }
-                    ),
+                    #html.Label('Filter by Dates', style={'font-weight': 'bold'}),
+                    #html.Label('Filter the data set using a date range.'),
+                    #dcc.DatePickerRange(
+                    #    id='date-range',
+                    #    minimum_nights=1,
+                    #    clearable=True,
+                    #    with_portal=False,
+                    #    start_date_placeholder_text="Start Date",
+                    #    end_date_placeholder_text="End Date",
+                    #    start_date=date(1990, 1, 1),
+                    #    end_date=date(2030, 1, 1),
+                    #    style = {'width': '100%',
+                    #            'marginRight': '15px',
+                    #            'padding': '10px 5px',
+                    #            'borderRadius': '4px'
+                    #            }
+                    #),
                     html.Label('Toggles', style={'font-weight': 'bold'}),
                     toggle_table,
-                    html.Label('Interaction Log [Advanced]', style={'font-weight': 'bold'}),
+                    html.Label('Interaction Log', style={'font-weight': 'bold'}),
                     html.Label('This part displays the interaction log of the user. This is for debugging purposes only.'),
                     html.Div(
                         id='interact-log-div',
@@ -347,11 +343,12 @@ def intermediate_btn_query(n_clicks, cur_val):
 @app.callback(ServersideOutput('store', 'data'),
               Input('load-data-intermediate', 'value'),
               [State('dataset-choice', 'value'),
-               State('date-range', 'start_date'),
-               State('date-range', 'end_date')], memoize=True)
-def query_data(n_clicks, dataset, start_date, end_date):
+               #State('date-range', 'start_date'),
+               #State('date-range', 'end_date')
+               ], memoize=True)
+def query_data(n_clicks, dataset):#, start_date, end_date):
     if n_clicks:
-        query = read_query(dataset, start_date, end_date)
+        query = read_query(dataset)#, start_date, end_date)
         print("Read new data set: " + str(dataset))
         return query
     else:
@@ -365,7 +362,8 @@ def update_interactions(previous_actions):
     return html.P("No interactions have been logged yet.")
 
 @app.callback([Output('data-table-tab', 'children'),
-               Output('previous-actions','data')],
+               Output('previous-actions','data'),
+               Output('data-tbl', 'selected_rows')],
                Input('store', 'data'))
 def update_data_table(query):
     if query is not None:
@@ -387,10 +385,11 @@ def update_data_table(query):
                         filter_action='native',
                         page_current=0,
                         page_size=20,
+                        selected_row_ids=[0],
                         page_action='native',
                         columns=[{"name": i, "id": i} for i in query.loc[:,['id','date','title']]]
                     )]
-        return new_table, []
+        return new_table, [], [0]
     else:
         raise PreventUpdate
 
@@ -440,7 +439,9 @@ def update_data_table(query):
                State('use-regularization', 'on'),
                State('strict-start', 'on')
               ], prevent_initial_call=True)
-def interact_with_graph(rmv_node, rmv_edge, add_edge, add_node, main_route, anti_chain, recompute_lp, add_cluster_list, search_btn, search_enter_key, query,
+def interact_with_graph(rmv_node, rmv_edge, add_edge, add_node, 
+                        #main_route, anti_chain, 
+                        recompute_lp, add_cluster_list, search_btn, search_enter_key, query,
                         elements, nodes, edges, k_input, mincover_input, sigma_t,# trans_reduce,
                         dataset, cluster_value, search_value, similar_input,
                         selected_rows_table, selected_cells, scatter_fig, execution_id, xai_tab, overview_tab, previous_actions,
@@ -519,6 +520,8 @@ def interact_with_graph(rmv_node, rmv_edge, add_edge, add_node, main_route, anti
     elif button_id == 'search-button' or button_id == 'search-input':
         if elements:
             if len(search_value.strip()) == 0:
+                for ele in elements:
+                    ele["data"]["search"] = "F"
                 return [add_execution_id(elements, execution_id), base_layout, '', previous_actions, scatter_fig, execution_id, xai_tab, overview_tab] # Nothing happens.
             for ele in elements:
                 if "story" in ele['data']['id'] or "-" in ele['data']['id']:
@@ -842,32 +845,31 @@ def interact_with_graph(rmv_node, rmv_edge, add_edge, add_node, main_route, anti
                 }
                 scatter_fig.add_annotation(annotation)
             execution_id += 1
-            if use_xai: # No topic or entity details if XAI is disabled.
-                topic_count = len(cluster_description)
-                topic_count_desc = "There are " + str(topic_count) + " topic clusters in the data set."
-                if topic_count == 1:
-                    topic_count_desc = "There is only a single topic cluster in the data set."
-                # Process topic lists
-                topic_list = [html.Div("Topic " + str(idx_topic) + ": " + desc, style={'fontSize': 14}) for idx_topic, desc in enumerate(cluster_description)]
-                # Process entities
-                extended_ent_list = chain.from_iterable(ent_doc_list)
-                entity_list_count = Counter([truecase.get_true_case(ent.text.lower().strip()) for ent in extended_ent_list])
-                entity_list_string = []
-                for ent, count in entity_list_count.most_common():
-                    entity_list_string.append(html.Div(ent + ": " + str(count), style={'fontSize': 14}))
-                new_xai_table = [dt.DataTable(id='hidden-xai-tbl', data=graph_df_new.to_dict('records'))]
-                new_overview_tab = [html.Div('Topic list', style={'fontSize': 14, 'fontWeight': 'bold', 'text-decoration': 'underline'})]
-                new_overview_tab += topic_list
-                new_overview_tab.append(html.Div('Entity list', style={'fontSize': 16, 'fontWeight': 'bold', 'text-decoration': 'underline'}))
-                new_overview_tab += entity_list_string
-                return [add_execution_id(new_elements, execution_id), base_layout_fit, html.P([status_msg]), previous_actions, scatter_fig, execution_id, new_xai_table, new_overview_tab]
+            #if use_xai: # No topic or entity details if XAI is disabled.
+            topic_count = len(cluster_description)
+            topic_count_desc = "There are " + str(topic_count) + " topic clusters in the data set."
+            if topic_count == 1:
+                topic_count_desc = "There is only a single topic cluster in the data set."
+            # Process topic lists
+            topic_list = [html.P([html.B("Topic " + str(idx_topic) + ": "), html.Span(desc)], style={'fontSize': 14}) for idx_topic, desc in enumerate(cluster_description)]
+            # Process entities
+            extended_ent_list = chain.from_iterable(ent_doc_list)
+            entity_list_count = Counter([truecase.get_true_case(ent.text.lower().strip()) for ent in extended_ent_list])
+            entity_list_string = []
+            for ent, count in entity_list_count.most_common():
+                entity_list_string.append(html.Div(ent + ": " + str(count), style={'fontSize': 14}))
+            new_xai_table = [dt.DataTable(id='hidden-xai-tbl', data=graph_df_new.to_dict('records'))]
+            new_overview_tab = [html.Div('Topic list', style={'fontSize': 16, 'fontWeight': 'bold', 'text-decoration': 'underline'})]
+            new_overview_tab += topic_list
+            new_overview_tab.append(html.Div('Entity list', style={'fontSize': 16, 'fontWeight': 'bold', 'text-decoration': 'underline'}))
+            new_overview_tab += entity_list_string
+            return [add_execution_id(new_elements, execution_id), base_layout_fit, html.P([status_msg]), previous_actions, scatter_fig, execution_id, new_xai_table, new_overview_tab]
 
-            new_overview_tab = [html.Div('Topic list', style={'fontSize': 16, 'fontWeight': 'bold', 'text-decoration': 'underline'}),
-                                html.Div('Explainable AI component is disabled. Enable it to generate the topic list.'),
-                                html.Div('Entity list', style={'fontSize': 16, 'fontWeight': 'bold', 'text-decoration': 'underline'}),
-                                html.Div('Explainable AI component is disabled. Enable it to generate the entity list.')]
-
-            return [add_execution_id(new_elements, execution_id), base_layout_fit, html.P([status_msg]), previous_actions, scatter_fig, execution_id, xai_tab, new_overview_tab]
+            #new_overview_tab = [html.Div('Topic list', style={'fontSize': 16, 'fontWeight': 'bold', 'text-decoration': 'underline'}),
+            #                    html.Div('Explainable AI component is disabled. Enable it to generate the topic list.'),
+            #                    html.Div('Entity list', style={'fontSize': 16, 'fontWeight': 'bold', 'text-decoration': 'underline'}),
+            #                    html.Div('Explainable AI component is disabled. Enable it to generate the entity list.')]
+            #return [add_execution_id(new_elements, execution_id), base_layout_fit, html.P([status_msg]), previous_actions, scatter_fig, execution_id, xai_tab, new_overview_tab]
         return [add_execution_id(elements, execution_id), base_layout, html.P([status_msg]), previous_actions, scatter_fig, execution_id, xai_tab, overview_tab]
     elif button_id == 'add-cluster-list':
         if elements and nodes:
@@ -903,39 +905,14 @@ def explainTwoEvents(cmp_btn, execution_id, node_data, query):
 
             s1_row = query.loc[query['id'] == str(id_start)].iloc[0] # Access single row.
             s2_row = query.loc[query['id'] == str(id_end)].iloc[0]
-            s1 = s1_row['title']
-            s2 = s2_row['title']
+            s1 = s1_row['title'] + "\n" + s1_row['full_text'] 
+            s2 = s2_row['title'] + "\n" + s2_row['full_text']
 
             shap_values, features = sim_explanation(s1, s2)
             # Generate plot here.
-
-            #df_dict = features.to_dict('records')[0]
-            #words = list(df_dict.values())
-            #positions = list(df_dict.keys())
-            #values = shap_values.values[0].tolist()
-            #words, positions, values = zip(*[(word, position, value) for word, position, value in zip(words, positions, values) if word not in all_stopwords and word not in string.punctuation])
-            #feature_names = ["{} = {}".format(a_, b_) for a_, b_ in zip(positions, words)]
-            #values = np.array(values).reshape(1, -1)
-
-            #shap.summary_plot(values, feature_names=feature_names, show=False, plot_type="bar")
-            #shap_plot = plt.gcf()
-
-            #expected_value = shap_values.base_values[0]
-            #shap.decision_plot(expected_value, 
-            #                   shap_values.values, 
-            #                   shap_values.data,
-            #                   link='identity', 
-            #                   new_base_value=0.5,
-            #                   feature_order='hclust', 
-            #                   show=False,
-            #                   feature_display_range=slice(None, None, 1))#new_base_value)
-            #shap_plot = shap.waterfall_plot(shap_values[0], show=False)
-            max_display = shap_values.values.shape[1]
-            expected_value = shap_values.base_values[0]
-            shap_values.values = change_shap_base_value(expected_value, 0.5, shap_values.values)
             shap_values.base_values[0] = 0.5
-            shap_plot = shap.plots.waterfall(shap_values[0], max_display=max_display, show=False)            
-            #shap_plot = plt.gcf()
+            shap_plot = similarity_plot(shap_values, features, topn=10)#shap.plots.waterfall(shap_values[0], max_display=max_display, show=False)            
+            shap_plot = plt.gcf()
             # Output plot as image.
             s = io.BytesIO()
             shap_plot.savefig(s, format='png', bbox_inches="tight")
@@ -950,108 +927,101 @@ def explainTwoEvents(cmp_btn, execution_id, node_data, query):
     return ["", ""]
 
 
-@app.callback([Output('explain-edge-text', 'children'),
-               Output('explaining-edge-output', 'children')],
-              [Input('explain-edge', 'n_clicks')],
+@app.callback([Output('tap-edge', 'children'),
+               Output('loading-edge-output', 'children')],
+              [Input('explain-edge', 'n_clicks'),
+               Input('cytoscape', 'tapEdgeData')],
               [State('execution-id', 'value'),
               State('hidden-xai-tbl', 'data'),
               State('cytoscape', 'selectedEdgeData'),
               State('store', 'data'),
               State('use-xai', 'on')])
-def explainEdge(cmp_btn, execution_id, xai_tab, edge_data, query, use_xai):
-    if not use_xai:
-        output_list = [html.P(children=[html.Strong('The XAI component is disabled, please enable and re-generate the map to get connection explanations.')], style={'fontSize': 16})]
-        return [output_list, ""]
-    if len(edge_data) == 1: # Only one edge must be selected.
-        data = edge_data[0]
-        #offset = min(query.id.astype('int'))
-        node_ids = data['id'].replace("_" + str(execution_id) + "I", '').split(sep='-')
-        id_start = node_ids[0]# - offset
-        id_end = node_ids[1]# - offset
+def explainEdge(cmp_btn, data, execution_id, xai_tab, edge_data, query, use_xai):
+    ctx = dash.callback_context
+    button_id = ctx.triggered[0]['prop_id'].split('.')[0]
 
-        s1_row = query.loc[query['id'] == str(id_start)].iloc[0] # Access single row.
-        s2_row = query.loc[query['id'] == str(id_end)].iloc[0]
-        s1 = s1_row['title']
-        s2 = s2_row['title']
+    node_ids = data['id'].replace("_" + str(execution_id) + "I", '').split(sep='-')
+    id_start = node_ids[0]
+    id_end = node_ids[1]
+    if id_start.isdigit() and id_end.isdigit():
+        start_row = query.iloc[int(id_start)]# - offset]
+        end_row = query.iloc[int(id_end)]# - offset]
+        output_list = [html.P('Edge Data', style={'fontSize': 16, 'fontWeight': 'bold', 'text-decoration': 'underline'}),
+                       html.P(children=[html.Strong('Source: '), html.Span(start_row['title'])], style={'fontSize': 14}),
+                       html.P(children=[html.Strong('Target: '), html.Span(end_row['title'])], style={'fontSize': 14}),
+                       html.P(children=[html.Strong('Weight: '), html.Span(str(round(data['weight'], 2)))], style={'fontSize': 14})]
 
-        shap_values, features = sim_explanation(s1, s2)
-        # Generate plot here.
-
-        #df_dict = features.to_dict('records')[0]
-        #words = list(df_dict.values())
-        #positions = list(df_dict.keys())
-        #values = shap_values.values[0].tolist()
-
-        #words, positions, values = zip(*[(word, position, value) for word, position, value in zip(words, positions, values) if word not in all_stopwords and word not in string.punctuation])
-        #feature_names = ["{} = {}".format(a_, b_) for a_, b_ in zip(positions, words)]
-        #values = np.array(values).reshape(1, -1)
-
-        #shap.summary_plot(values, feature_names=feature_names, show=False, plot_type="bar")
-        #shap_plot = plt.gcf()
-        #shap_plot = shap.waterfall_plot(shap_values[0], show=False)
-        #expected_value = shap_values.base_values[0]
-        #shap.decision_plot(expected_value, 
-        #                   shap_values.values, 
-        #                   shap_values.data,
-        #                   link='identity', 
-        #                   feature_order='hclust', 
-        #                   show=False,
-        #                   new_base_value=0.5,
-        #                   feature_display_range=slice(None, None, 1))
-        #shap_plot = plt.gcf()
-        max_display = shap_values.values.shape[1]
-        expected_value = shap_values.base_values[0]
-        shap_values.values = change_shap_base_value(expected_value, 0.5, shap_values.values)
-        shap_values.base_values[0] = 0.5
-        shap_plot = shap.plots.waterfall(shap_values[0], max_display=max_display, show=False)
-
-
-        # Output plot as image.
-        s = io.BytesIO()
-        shap_plot.savefig(s, format='png', bbox_inches="tight")
-        plt.close(shap_plot)
-        s = base64.b64encode(s.getvalue()).decode("utf-8").replace("\n", "")
-        img = 'data:image/png;base64,%s' % s
-
-        xai_df = pd.DataFrame.from_dict(xai_tab)
-        start_row = xai_df.loc[xai_df['id'] == int(id_start)]
-        adjacency_list_start = start_row['adj_list'].values[0]
-        if str(id_end) not in adjacency_list_start:
-            # This must be a manual connection.
-            explanation = [html.P("This connection was manually added by the user.")]
-            explanation += [html.Strong("Keyword contributions to the connection", style={'fontSize': 16, 'text-decoration': 'underline'}), html.Img(src=img, style={"max-width": "100%"})]
-            output_list = [html.P(children=[html.Strong('Connection Explanation')], style={'fontSize': 16, 'text-decoration': 'underline'})] + explanation
-            return [output_list, ""] 
-        index_end = adjacency_list_start.index(str(id_end))
-
-        explanation = []
-        explanation_details = []
-        top_xai = [html.P(children=[html.Strong("Event Topics: ", style={'fontSize': 16}),
-            html.Span(str(start_row['topical_description'].values[0][index_end]), style={'fontSize': 14})])]
-        #sim_xai = [html.P(children=[html.Strong("Common Keywords: "), html.Span(str(start_row['similarity_description'].values[0][index_end]))])]
-        ent_xai = [html.P(children=[html.Strong("Common Entities: ", style={'fontSize': 16}),
-            html.Span(str(start_row['entity_description'].values[0][index_end]), style={'fontSize': 14})])]
-
-
-        if "Manual" in data['label']: # No more temporal connections.
-            explanation = [html.P("This connection was manually added by the user.")]
-        else:
-            if "Topical" in data['label']:
-                explanation += [html.P("This connection is based on common topical information. See extracted topics of each event below.", style={'fontSize': 14})]
-                explanation_details += top_xai
-            if "Similarity" in data['label']:
-                explanation += [html.P("This connection is based on similar content and keywords. See extracted keywords and their contributions to similarity below.", style={'fontSize': 14})]
-                #explanation_details += sim_xai
-            if "Entity" in data['label']:
-                explanation += [html.P("This connection is based on common entities. See extracted entities of each event below.", style={'fontSize': 14})]
-                explanation_details += ent_xai
-        explanation += explanation_details
-        explanation += [html.Strong("Keyword contributions to the connection", style={'fontSize': 16, 'text-decoration': 'underline'}), html.Img(src=img, style={"max-width": "100%"})] # Final element is shap plot.
-
-        if id_start.isdigit() and id_end.isdigit():
-            output_list = [html.P(children=[html.Strong('Connection Explanation')], style={'fontSize': 16, 'text-decoration': 'underline'})] + explanation
+    if button_id == 'explain-edge':
+        if not use_xai:
+            output_list += [html.P(children=[html.Strong('The XAI component is disabled, please enable and re-generate the map to get connection explanations.')], style={'fontSize': 16})]
             return [output_list, ""]
-    return ["", ""]
+        if len(edge_data) == 1: # Only one edge must be selected.
+            data = edge_data[0]
+            #offset = min(query.id.astype('int'))
+            node_ids = data['id'].replace("_" + str(execution_id) + "I", '').split(sep='-')
+            id_start = node_ids[0]# - offset
+            id_end = node_ids[1]# - offset
+
+            s1_row = query.loc[query['id'] == str(id_start)].iloc[0] # Access single row.
+            s2_row = query.loc[query['id'] == str(id_end)].iloc[0]
+            s1 = s1_row['title'] + "\n" + s1_row['full_text']
+            s2 = s2_row['title'] + "\n" + s2_row['full_text']
+            #print(s1)
+            #print(s2)
+
+            shap_values, features = sim_explanation(s1, s2)
+            # Generate plot here.
+            shap_values.base_values[0] = 0.5
+            shap_plot = similarity_plot(shap_values, features, topn=10)#shap.plots.waterfall(shap_values[0], max_display=max_display, show=False)
+            shap_plot = plt.gcf()
+
+
+            # Output plot as image.
+            s = io.BytesIO()
+            shap_plot.savefig(s, format='png', bbox_inches="tight")
+            plt.close(shap_plot)
+            s = base64.b64encode(s.getvalue()).decode("utf-8").replace("\n", "")
+            img = 'data:image/png;base64,%s' % s
+
+            xai_df = pd.DataFrame.from_dict(xai_tab)
+            start_row = xai_df.loc[xai_df['id'] == int(id_start)]
+            adjacency_list_start = start_row['adj_list'].values[0]
+            if str(id_end) not in adjacency_list_start:
+                # This must be a manual connection.
+                explanation = [html.P("This connection was manually added by the user.")]
+                explanation += [html.Strong("Keyword contributions to the connection", style={'fontSize': 16, 'text-decoration': 'underline'}), html.Img(src=img, style={"max-width": "100%"})]
+                output_list = [html.P(children=[html.Strong('Connection Explanation')], style={'fontSize': 16, 'text-decoration': 'underline'})] + explanation
+                return [output_list, ""]
+            index_end = adjacency_list_start.index(str(id_end))
+
+            explanation = []
+            explanation_details = []
+            top_xai = [html.P(children=[html.Strong("Event Topics: ", style={'fontSize': 16}),
+                html.Span(str(start_row['topical_description'].values[0][index_end]), style={'fontSize': 14})])]
+            #sim_xai = [html.P(children=[html.Strong("Common Keywords: "), html.Span(str(start_row['similarity_description'].values[0][index_end]))])]
+            ent_xai = [html.P(children=[html.Strong("Common Entities: ", style={'fontSize': 16}),
+                html.Span(str(start_row['entity_description'].values[0][index_end]), style={'fontSize': 14})])]
+
+
+            if "Manual" in data['label']: # No more temporal connections.
+                explanation = [html.P("This connection was manually added by the user.")]
+            else:
+                if "Topical" in data['label']:
+                    explanation += [html.P("This connection is based on common topical information. See extracted topics of each event below.", style={'fontSize': 14})]
+                    explanation_details += top_xai
+                if "Similarity" in data['label']:
+                    explanation += [html.P("This connection is based on similar content and keywords. See extracted keywords and their contributions to similarity below.", style={'fontSize': 14})]
+                    #explanation_details += sim_xai
+                if "Entity" in data['label']:
+                    explanation += [html.P("This connection is based on common entities. See extracted entities of each event below.", style={'fontSize': 14})]
+                    explanation_details += ent_xai
+            explanation += explanation_details
+            explanation += [html.Strong("Keyword contributions to the connection", style={'fontSize': 16, 'text-decoration': 'underline'}), html.Img(src=img, style={"max-width": "100%"})] # Final element is shap plot.
+
+            if id_start.isdigit() and id_end.isdigit():
+                output_list = [html.P(children=[html.Strong('Connection Explanation')], style={'fontSize': 16, 'text-decoration': 'underline'})] + explanation
+                return [output_list, ""]
+    return [output_list, ""]
 
 
 @app.callback([Output('tap-node-id', 'children'),
@@ -1080,47 +1050,51 @@ def displayTapNodeData(data, execution_id, xai_tab, node_data, query):
         string_list = node_row['full_text'].split(sep='\n')
         output_list = [html.Div(node_row['date'], style={'fontSize': 10, 'font-style': 'italic'}),
                       html.A(node_row['url'], href=node_row['url'], target='_blank', style={'fontSize': 12, 'font-style': 'italic'})]
-        title = html.Div(node_row['title'], style={'fontSize': 14, 'fontWeight': 'bold'}, contentEditable=True)
+        title = html.Div(node_row['title'], style={'fontSize': 14, 'fontWeight': 'bold'}, contentEditable=False)
         if data["storyname"]:
             node_story = [html.Div("Part of the Storyline: " + data["storyname"], style={'fontSize': 14, 'fontWeight': 'bold'})]
         else:
-            node_story = [html.Div("Part of the Storyline: " + "Unassigned", style={'fontSize': 14, 'fontWeight': 'bold'})]
+            # Do not show storyline assignment if there is no info about it.
+            node_story = [] #[html.Div("Part of the Storyline: " + "Unassigned", style={'fontSize': 14, 'fontWeight': 'bold'})]
         explanation = data.get('explanation', None)
         if explanation:
             node_story.append(html.Div(explanation, style={'fontSize': 12}))
         node_story.append(html.P(start_row['event_topic'], style={'fontSize': 12, 'fontWeight': 'bold'}))
         node_story.append(html.Hr(style={'height': 1, 'margin-top': 0, 'margin-bottom': 0}))
 
-        for s in string_list:
-            if len(s.strip()) > 0:
-                output_list += [html.P(s.strip(), contentEditable=True)]
+
+        if len(string_list) == 1: # No natural split.
+            splitter = re.compile(r'''((?:[^\."']|"[^"]*"|'[^']*'|\([^\)]*\))+)''')
+            p_n = 4 # Split into paragraphs of 4 if necessary. Lots of bug fixes to handle U.S. case.
+            split_list = splitter.split(string_list[0].strip())
+            split_list_copy = []
+            previous_us = ""
+            for s in split_list:
+                if s == "S":
+                    split_list_copy[-1] += "." + s # Special U.S. case
+                    previous_us = "S"
+                elif s == ".":
+                    if previous_us == "S":
+                        split_list_copy[-1] += s
+                        previous_us = "S."
+                    continue # Do nothing
+                else:
+                    if previous_us == "S.":
+                        split_list_copy[-1] += " " + s
+                        previous_us = ""
+                    else:
+                        split_list_copy.append(s)
+            split_list_p_n = [split_list_copy[i * p_n:(i + 1) * p_n] for i in range((len(split_list_copy) + p_n - 1) // p_n )]
+            for s in split_list_p_n: # List of list of strings.
+                # Concatenate and output.
+                output_list += [html.P(". ".join(s) + ".", contentEditable=False)]    
+        else:
+            for s in string_list:
+                if len(s.strip()) > 0:
+                    output_list += [html.P(s.strip(), contentEditable=False)]
 
         return [node_id, node_story, title, output_list, ""]
     return ["", "", "", "", ""]
-
-
-@app.callback([Output('tap-edge', 'children'),
-               Output('explain-edge-text', 'children'),
-               Output('loading-edge-output', 'children')],
-              [Input('cytoscape', 'tapEdgeData')],
-              [State('execution-id', 'value'),
-              State('store', 'data')])
-def displayTapEdgeData(data, execution_id, query):
-    if data:
-        #offset = min(query.id.astype('int'))
-        node_ids = data['id'].replace("_" + str(execution_id) + "I", '').split(sep='-')
-        id_start = node_ids[0]
-        id_end = node_ids[1]
-
-        if id_start.isdigit() and id_end.isdigit():
-            start_row = query.iloc[int(id_start)]# - offset]
-            end_row = query.iloc[int(id_end)]# - offset]
-            output_list = [html.P('Edge Data', style={'fontSize': 16, 'fontWeight': 'bold', 'text-decoration': 'underline'}),
-                           html.P(children=[html.Strong('Source: '), html.Span(start_row['title'])], style={'fontSize': 14}),
-                           html.P(children=[html.Strong('Target: '), html.Span(end_row['title'])], style={'fontSize': 14}),
-                           html.P(children=[html.Strong('Weight: '), html.Span(str(round(data['weight'], 2)))], style={'fontSize': 14})]
-            return [output_list, "", ""]
-    return ["", "", ""]
 
 
 @app.callback(Output("cytoscape", "generateImage"),

@@ -95,18 +95,11 @@ class ExplainableSTS():
         s2 = ' '.join(t_s2)
         return self.wrapper.sts_model([(s1, s2)])[0]
 
-    def explain(self, sent1, sent2, plot=False):
-        explainer = shap.Explainer(self.wrapper, self.wrapper.mask_model, algorithm="permutation", seed=42, max_evals=500)
+    def explain(self, sent1, sent2):
+        explainer = shap.Explainer(self.wrapper, self.wrapper.mask_model, new_base_value=0.5, algorithm="permutation", seed=42, max_evals=500)
         features = self.wrapper.build_feature(sent1, sent2)
         value = explainer(features)
-        if plot:
-            shap.waterfall_plot(value[0])
-            shap.plots.text(value[0], num_starting_labels=20, separator=' ')
-        #all_tokens = []
-        #all_tokens += ['s1_'+t for t in self.wrapper.tokenizer(sent1)]
-        #all_tokens += ['s2_'+t for t in self.wrapper.tokenizer(sent2)]
-
-        return value, features#[(token,sv) for token, sv in zip(all_tokens,value[0].values)], value
+        return value, features
 
 
 

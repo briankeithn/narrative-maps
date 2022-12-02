@@ -11,7 +11,7 @@ class MiniLMModel():
         for pair in sent_pairs:
             all_sents += [pair[0],pair[1]]
 
-        embds = self.sts_model.encode(all_sents)
+        embds = self.sts_model.encode(all_sents, show_progress_bar=False)
         scores = []
         for i in range(int(len(all_sents)/2)):
             scores.append(util.pytorch_cos_sim(embds[i*2], embds[i*2+1])[0][0])

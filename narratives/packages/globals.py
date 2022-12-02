@@ -15,8 +15,8 @@ execution_id = 0
 # Initialise the explainable sts metric
 #sts_explain_model = ExplainableSTS('minilm', MAX_LENGTH=30)
 
-color_cluster = ["lblue","lred", "lorange", "lpurple", "lyellow", "lgreen", "blue", "green", "red", "orange", "purple"]
-color_id = ["#a6cee3", "#fb9a99", "#fdbf6f", "#cab2d6", "#ffff99", "#b2df8a", "#1f78b4", "#33a02c", "#e31a1c", "#ff7f00","#6a3d9a"]
+color_cluster = ["blue","red", "orange", "purple", "yellow", "green"]#, "blue", "green", "red", "orange", "purple"]
+color_id = ["#a6cee3", "#fb9a99", "#fdbf6f", "#cab2d6", "#ffff99"]#, "#b2df8a", "#1f78b4", "#33a02c", "#e31a1c", "#ff7f00","#6a3d9a"]
 
 # Stylesheets for node and edges.
 cyto_stylesheet = [

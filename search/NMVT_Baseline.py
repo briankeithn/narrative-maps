@@ -35,7 +35,7 @@ app = dash.Dash(
 app.title = 'Narrative Baseline'
 
 # Files
-dataset = "cuba_small"
+dataset = "cuba_160"
 query = read_query_search(dataset)
 #sim_table = compute_sim_with_t(query, str(dataset))
 
@@ -97,10 +97,10 @@ app.layout = html.Div([
 		children=[
 		dcc.Dropdown(
 			id="dataset-choice",
-			options=[{'label':'Cuban Protests (Full)', 'value': 'cuba'}, {'label':'Cuban Protests (Small)', 'value': 'cuba_small'}, {'label':'Cuban Protests (160)', 'value': 'cuba_160'},],
+			options=[{'label':'Cuban Protests', 'value': 'cuba_160'}, {'label':'COVID-19', 'value': 'cv'}],
 			optionHeight=50,
 			style={'width': '150px', 'margin-right': '5px'},
-			value='cuba',
+			value='cuba_160',
 			clearable=False),
 		html.Button(className="map_btn",
 					style={'background-image' : 'url("/static/load_icon.svg")'},
@@ -174,27 +174,27 @@ app.layout = html.Div([
 					)
 				])
 			]),
-			dcc.Tab(label='Options', value="3", children=[
-				html.Div(style=styles['tab'], children=[
-					html.Label('Filter by Dates', style={'font-weight': 'bold'}),
-					html.Label('Filter the data set using a date range.'),
-					dcc.DatePickerRange(
-						id='date-range',
-						minimum_nights=1,
-						clearable=True,
-						#with_portal=True,
-						start_date_placeholder_text="Start Date",
-						end_date_placeholder_text="End Date",
-						start_date=date(1990, 1, 1),
-						end_date=date(2030, 1, 1),
-						style = {'width': '100%',
-								'marginRight': '15px',
-								'padding': '10px 5px',
-								'borderRadius': '4px'
-								}
-					)
-				])
-			])
+			#dcc.Tab(label='Options', value="3", children=[
+			#	html.Div(style=styles['tab'], children=[
+			#		html.Label('Filter by Dates', style={'font-weight': 'bold'}),
+			#		html.Label('Filter the data set using a date range.'),
+			#		dcc.DatePickerRange(
+			#			id='date-range',
+			#			minimum_nights=1,
+			#			clearable=True,
+			#			#with_portal=True,
+			#			start_date_placeholder_text="Start Date",
+			#			end_date_placeholder_text="End Date",
+			#			start_date=date(1990, 1, 1),
+			#			end_date=date(2030, 1, 1),
+			#			style = {'width': '100%',
+			#					'marginRight': '15px',
+			#					'padding': '10px 5px',
+			#					'borderRadius': '4px'
+			#					}
+			#		)
+			#	])
+			#])
 		]),
 	])
 	]),
@@ -214,11 +214,11 @@ app.layout = html.Div([
 			   State('K-input', 'value'),
 			   State('dataset-choice', 'value'),
 			   State('data-table-tab', 'children'),
-			   State('date-range', 'start_date'),
-			   State('date-range', 'end_date')
+			   #State('date-range', 'start_date'),
+			   #State('date-range', 'end_date')
 			  ], prevent_initial_call=True)
 def interact_with_graph(search_button, load_data, search_input_enter, search_query, max_results,
-						dataset, data_table_tab, start_date, end_date):#, rep_landmark_mode):
+						dataset, data_table_tab):#, start_date, end_date):#, rep_landmark_mode):
 	ctx = dash.callback_context
 	if not ctx.triggered:
 		button_id = 'No clicks yet'
@@ -227,7 +227,7 @@ def interact_with_graph(search_button, load_data, search_input_enter, search_que
 	# If we are here this means we clicked a "classic" button!
 	button_id = ctx.triggered[0]['prop_id'].split('.')[0]
 	if button_id == 'search-button' or button_id == 'search-input':
-		query = read_query_search(dataset, start_date, end_date)
+		query = read_query_search(dataset)#, start_date, end_date)
 		print("Data file has been read successfully.")
 		sim_list = search_dataset(search_query, query, dataset)
 		print("Relevance table has been computed.")
@@ -336,7 +336,7 @@ def interact_with_graph(search_button, load_data, search_input_enter, search_que
 
 		return [search_results, html.P([status_msg]), data_table_tab]
 	elif button_id == 'load-data-button':
-		query = read_query_search(dataset, start_date, end_date)
+		query = read_query_search(dataset)#, start_date, end_date)
 		new_table = [html.Div('Data table with all the events from the current data set. You can search for specific events here.'),
 					dt.DataTable(
 						id='data-tbl', data=query.to_dict('records'),
@@ -442,29 +442,61 @@ def display_output(active_page, styles):
 	 Output('tap-node-text', 'children')],
     Input({'type': 'btn-read-more', 'index': ALL}, 'n_clicks'),
     [State('dataset-choice', 'value'),
-     State('date-range', 'start_date'),
-	 State('date-range', 'end_date')]
+     #State('date-range', 'start_date'),
+	 #State('date-range', 'end_date')
+	 ]
 )
-def display_output(btn_clicks, dataset, start_date, end_date):
+def display_output(btn_clicks, dataset):#, start_date, end_date):
     ctx = dash.callback_context
     if not ctx.triggered:
         button_id = 'No clicks yet'
         return ["", "", "", ""]
     p = re.compile(r"(\"index\"):(\d+)")
-    query = read_query(dataset, start_date, end_date, partial=True)
+    query = read_query(dataset, partial=True) #start_date, end_date
     trigger_node = list(dash.callback_context.triggered_prop_ids.keys())[0]
     m = p.search(trigger_node)
     node_id = m.group(2) # Second parenthesis, get element that triggered this.
     offset = min(query.id.astype('int'))
     node_row = query.iloc[int(node_id) - offset]
     string_list = node_row['full_text'].split(sep='\n')
-    title = html.Div(node_row['title'], style={'fontSize': 16, 'fontWeight': 'bold'}, contentEditable=True)
+
+
+
+
+    title = html.Div(node_row['title'], style={'fontSize': 16, 'fontWeight': 'bold'}, contentEditable=False)
     output_list = [html.Div(node_row['date'], style={'fontSize': 12, 'font-style': 'italic'}),
                    html.A(node_row['url'], href=node_row['url'], target='_blank', style={'fontSize': 12, 'font-style': 'italic'})]
     node_story = ""
-    for s in string_list:
-        if len(s.strip()) > 0:
-            output_list += [html.P(s.strip(), contentEditable=True)]
+    if len(string_list) == 1: # No natural split.
+        splitter = re.compile(r'''((?:[^\."']|"[^"]*"|'[^']*'|\([^\)]*\))+)''')
+        p_n = 4 # Split into paragraphs of 4 if necessary. Lots of bug fixes to handle U.S. case.
+        split_list = splitter.split(string_list[0].strip())
+        split_list_copy = []
+        previous_us = ""
+        for s in split_list:
+            if s == "S":
+                split_list_copy[-1] += "." + s # Special U.S. case
+                previous_us = "S"
+            elif s == ".":
+                if previous_us == "S":
+                    split_list_copy[-1] += s
+                    previous_us = "S."
+                continue # Do nothing
+            else:
+                if previous_us == "S.":
+                    split_list_copy[-1] += " " + s
+                    previous_us = ""
+                else:
+                    split_list_copy.append(s)
+        split_list_p_n = [split_list_copy[i * p_n:(i + 1) * p_n] for i in range((len(split_list_copy) + p_n - 1) // p_n )]
+        for s in split_list_p_n: # List of list of strings.
+            # Concatenate and output.
+            output_list += [html.P(". ".join(s) + ".", contentEditable=False)]    
+    else:
+        for s in string_list:
+            if len(s.strip()) > 0:
+                output_list += [html.P(s.strip(), contentEditable=False)]
+
     return [node_id, node_story, title, output_list]
 
 if __name__ == "__main__":

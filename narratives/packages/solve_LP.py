@@ -453,9 +453,11 @@ def create_LP(query, sim_table, membership_vectors, clust_sim_table, exp_temp_ta
                 print("Added start node(s)")
                 print("--- %s seconds ---" % (time() - start_time))
             initial_energy = 1.0 / num_starts
+            earliest_start = min(start_nodes)
             for node in start_nodes:
                 prob += node_act_vars[str(node)] == initial_energy, 'InitialNode' + str(node)
-
+            for node in range(0, earliest_start):
+                prob += node_act_vars[str(node)] == 0, 'BeforeStart' + str(node)
     if has_end:
         num_ends = len(end_nodes)
         if verbose:
@@ -468,15 +470,17 @@ def create_LP(query, sim_table, membership_vectors, clust_sim_table, exp_temp_ta
                 print("Added end node(s)")
                 print("--- %s seconds ---" % (time() - start_time))
             final_energy = 1.0 / num_ends
+            latest_end = min(end_nodes)
             for node in end_nodes:
                 prob += node_act_vars[str(node)] == final_energy, 'FinalNode' + str(node)
-
+            for node in range(latest_end + 1, n):
+                prob += node_act_vars[str(node)] == 0, 'AfterEnd' + str(node)
 
     if verbose:
         print("Chain constraints created.")
         print("--- %s seconds ---" % (time() - start_time))
     prob += lpSum([node_act_vars[i] for i in var_i]) == K, 'KNodes'
-    prob += lpSum([node_next_vars[ij] for ij in var_ij]) == K - 1, 'K-1Edges'
+    
     if verbose:
         print("Expected length constraints created.")
         print("--- %s seconds ---" % (time() - start_time))
@@ -933,8 +937,9 @@ def solve_LP(query, dataset,
         print("Computed entity similarities.")
         print("--- %s seconds ---" % (time() - start_time))
     if not use_entities:
-        ent_table = np.zeros(ent_table.shape)
-
+        actual_ent_table = np.zeros(ent_table.shape)
+    else:
+        actual_ent_table = ent_table
     # Deprecated relevance table computation
     relevance_table = [1.0] * membership_vectors.shape[0] # Create a vector full of 1s
     focus_query = None
@@ -966,13 +971,13 @@ def solve_LP(query, dataset,
             previous_varsdict = pickle.load(handle)
 
     if use_regularization:
-        prob = create_RLP(query, sim_table, membership_vectors, clust_sim_table, exp_temp_table, ent_table, numclust, relevance_table,
+        prob = create_RLP(query, sim_table, membership_vectors, clust_sim_table, exp_temp_table, actual_ent_table, numclust, relevance_table,
             K=K, mincover=mincover, sigma_t=sigma_t,
             operations=operations, cluster_list=cluster_list,
             has_start=has_start, has_end=has_end,
             start_nodes=start_nodes, end_nodes=end_nodes, verbose=verbose, force_cluster=force_cluster, previous_varsdict=previous_varsdict)
     else:
-        prob = create_LP(query, sim_table, membership_vectors, clust_sim_table, exp_temp_table, ent_table, numclust, relevance_table,
+        prob = create_LP(query, sim_table, membership_vectors, clust_sim_table, exp_temp_table, actual_ent_table, numclust, relevance_table,
                 K=K, mincover=mincover, sigma_t=sigma_t,
                 operations=operations, cluster_list=cluster_list,
                 has_start=has_start, has_end=has_end,
