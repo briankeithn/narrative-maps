@@ -25,7 +25,7 @@ The current version of "narratives" and "search" are deployed in PythonAnywhere.
 - Narrative Maps: https://briankeithn.pythonanywhere.com/
 - Baseline: https://search-briankeithn.pythonanywhere.com/
 
-**Please note that the deployment in PythonAnywhere is likely much more slow than running it in your own system.**
+**Please note that the deployment in PythonAnywhere is likely very slow compared to running the model in your own system.**
 
 ## Running with custom data
 I added a specific option to run with Custom data in your local version (not available in the PythonAnywhere version!). Simply create a "custom.csv" file, place it in the "data" folder, and select the "Custom" option in the data selection drop down in the main menu.
