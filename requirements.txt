@@ -1,8 +1,8 @@
-dash==2.6.0
+dash==2.7.0
 dash_bootstrap_components==1.0.0b3
 dash_cytoscape==0.3.0
 dash_daq==0.5.0
-dash_extensions==0.1.6
+dash_extensions==0.1.7
 Flask==1.1.2
 ftfy==6.0.3
 hdbscan==0.8.27
