@@ -66,11 +66,11 @@ sentence_transformers==2.2.2
 ## Requirements
 Here is the list of requirements for the project. Please note that everything has been implemented using Python 3.8. You may also need to install some NLTK packages (punkt and wordnet).
 ```
-dash==2.6.0
+dash==2.7.0
 dash_bootstrap_components==1.0.0b3
 dash_cytoscape==0.3.0
 dash_daq==0.5.0
-dash_extensions==0.1.6
+dash_extensions==0.1.7
 Flask==1.1.2
 ftfy==6.0.3
 hdbscan==0.8.27
