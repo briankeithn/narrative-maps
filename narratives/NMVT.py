@@ -845,24 +845,24 @@ def interact_with_graph(rmv_node, rmv_edge, add_edge, add_node,
                 }
                 scatter_fig.add_annotation(annotation)
             execution_id += 1
-            #if use_xai: # No topic or entity details if XAI is disabled.
-            topic_count = len(cluster_description)
-            topic_count_desc = "There are " + str(topic_count) + " topic clusters in the data set."
-            if topic_count == 1:
-                topic_count_desc = "There is only a single topic cluster in the data set."
-            # Process topic lists
-            topic_list = [html.P([html.B("Topic " + str(idx_topic) + ": "), html.Span(desc)], style={'fontSize': 14}) for idx_topic, desc in enumerate(cluster_description)]
-            # Process entities
-            extended_ent_list = chain.from_iterable(ent_doc_list)
-            entity_list_count = Counter([truecase.get_true_case(ent.text.lower().strip()) for ent in extended_ent_list])
-            entity_list_string = []
-            for ent, count in entity_list_count.most_common():
-                entity_list_string.append(html.Div(ent + ": " + str(count), style={'fontSize': 14}))
-            new_xai_table = [dt.DataTable(id='hidden-xai-tbl', data=graph_df_new.to_dict('records'))]
-            new_overview_tab = [html.Div('Topic list', style={'fontSize': 16, 'fontWeight': 'bold', 'text-decoration': 'underline'})]
-            new_overview_tab += topic_list
-            new_overview_tab.append(html.Div('Entity list', style={'fontSize': 16, 'fontWeight': 'bold', 'text-decoration': 'underline'}))
-            new_overview_tab += entity_list_string
+            if use_xai: # No topic or entity details if XAI is disabled.
+                topic_count = len(cluster_description)
+                topic_count_desc = "There are " + str(topic_count) + " topic clusters in the data set."
+                if topic_count == 1:
+                    topic_count_desc = "There is only a single topic cluster in the data set."
+                # Process topic lists
+                topic_list = [html.P([html.B("Topic " + str(idx_topic) + ": "), html.Span(desc)], style={'fontSize': 14}) for idx_topic, desc in enumerate(cluster_description)]
+                # Process entities
+                extended_ent_list = chain.from_iterable(ent_doc_list)
+                entity_list_count = Counter([truecase.get_true_case(ent.text.lower().strip()) for ent in extended_ent_list])
+                entity_list_string = []
+                for ent, count in entity_list_count.most_common():
+                    entity_list_string.append(html.Div(ent + ": " + str(count), style={'fontSize': 14}))
+                new_xai_table = [dt.DataTable(id='hidden-xai-tbl', data=graph_df_new.to_dict('records'))]
+                new_overview_tab = [html.Div('Topic list', style={'fontSize': 16, 'fontWeight': 'bold', 'text-decoration': 'underline'})]
+                new_overview_tab += topic_list
+                new_overview_tab.append(html.Div('Entity list', style={'fontSize': 16, 'fontWeight': 'bold', 'text-decoration': 'underline'}))
+                new_overview_tab += entity_list_string
             return [add_execution_id(new_elements, execution_id), base_layout_fit, html.P([status_msg]), previous_actions, scatter_fig, execution_id, new_xai_table, new_overview_tab]
 
             #new_overview_tab = [html.Div('Topic list', style={'fontSize': 16, 'fontWeight': 'bold', 'text-decoration': 'underline'}),
