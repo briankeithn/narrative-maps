@@ -863,13 +863,13 @@ def interact_with_graph(rmv_node, rmv_edge, add_edge, add_node,
                 new_overview_tab += topic_list
                 new_overview_tab.append(html.Div('Entity list', style={'fontSize': 16, 'fontWeight': 'bold', 'text-decoration': 'underline'}))
                 new_overview_tab += entity_list_string
-            return [add_execution_id(new_elements, execution_id), base_layout_fit, html.P([status_msg]), previous_actions, scatter_fig, execution_id, new_xai_table, new_overview_tab]
-
-            #new_overview_tab = [html.Div('Topic list', style={'fontSize': 16, 'fontWeight': 'bold', 'text-decoration': 'underline'}),
-            #                    html.Div('Explainable AI component is disabled. Enable it to generate the topic list.'),
-            #                    html.Div('Entity list', style={'fontSize': 16, 'fontWeight': 'bold', 'text-decoration': 'underline'}),
-            #                    html.Div('Explainable AI component is disabled. Enable it to generate the entity list.')]
-            #return [add_execution_id(new_elements, execution_id), base_layout_fit, html.P([status_msg]), previous_actions, scatter_fig, execution_id, xai_tab, new_overview_tab]
+                return [add_execution_id(new_elements, execution_id), base_layout_fit, html.P([status_msg]), previous_actions, scatter_fig, execution_id, new_xai_table, new_overview_tab]
+            else:
+                new_overview_tab = [html.Div('Topic list', style={'fontSize': 16, 'fontWeight': 'bold', 'text-decoration': 'underline'}),
+                                    html.Div('Explainable AI component is disabled. Enable it to generate the topic list.'),
+                                    html.Div('Entity list', style={'fontSize': 16, 'fontWeight': 'bold', 'text-decoration': 'underline'}),
+                                    html.Div('Explainable AI component is disabled. Enable it to generate the entity list.')]
+                return [add_execution_id(new_elements, execution_id), base_layout_fit, html.P([status_msg]), previous_actions, scatter_fig, execution_id, xai_tab, new_overview_tab]
         return [add_execution_id(elements, execution_id), base_layout, html.P([status_msg]), previous_actions, scatter_fig, execution_id, xai_tab, overview_tab]
     elif button_id == 'add-cluster-list':
         if elements and nodes:
