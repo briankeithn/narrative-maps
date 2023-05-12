@@ -1021,4 +1021,11 @@ def solve_LP(query, dataset,
         print("Scatter data frame construction...")
         print("--- %s seconds ---" % (time() - start_time))
 
+    sensitivity = False # This should be a parameter, but probably not worth it.
+    if verbose and sensitivity:
+        # Sensitivity analysis
+        res = [{'Name':name,'Constraint':const,'Price':const.pi,'Slack': const.slack}
+            for name, const in prob.constraints.items()]
+        print(pd.DataFrame(res))
+
     return [graph_df, (numclust, LpStatus[prob.status]), scatter_df, sim_table, clust_sim_table, ent_table, ent_doc_list, cluster_assignment]

@@ -37,6 +37,10 @@ from itertools import chain
 from collections import Counter
 import truecase
 
+# Chat
+import os
+import openai
+
 # Build App
 server = flask.Flask(__name__)
 
@@ -62,6 +66,64 @@ toggle_row_names = html.Tr([html.Td("Enable storyline name extraction."), html.T
 toggle_regularization = html.Tr([html.Td("Enable regularization (requires start event)."), html.Td(daq.BooleanSwitch(id='use-regularization', on=True, color="lightblue"))])
 toggle_strict_start = html.Tr([html.Td("Enable strict start mode (requires start event)."), html.Td(daq.BooleanSwitch(id='strict-start', on=False, color="lightblue"))])
 toggle_table = dbc.Table([html.Tbody([toggle_row_ent, toggle_row_temp, toggle_row_si, toggle_row_xai, toggle_row_names, toggle_regularization, toggle_strict_start])], bordered=False, borderless=True, style={'vertical-align': 'middle'})
+
+# Chatbot setup - Source: https://github.com/plotly/dash-sample-apps/blob/main/apps/dash-gpt3-chatbot/app.py
+# Authentication
+openai.api_key = os.getenv("OPENAI_API_KEY")
+print(openai.api_key)
+# Define controls
+controls = dbc.InputGroup(
+    children=[
+        dbc.Input(id="user-input", placeholder="Write to the automatic assistant...", type="text"),
+        dbc.Button("Submit", id="submit"),
+        dbc.Button("Explain Edge", id="explain-edge-chat"),
+        dbc.Button("Explain Importance", id="explain-important-chat"),
+        dbc.Button("Explain Story", id="explain-story-chat")
+    ]
+)
+# Description
+description = """
+You are an AI model designed to assist intelligence analysts, journalists, and fact checkers in narrative sensemaking tasks.
+You will be handling a model called narrative maps.
+You will be helping users analyze the events and stories contained in the data.
+The users will provide you with specific queries about storylines, events, or connections between events.
+"""
+# Define Layout
+conversation = html.Div(
+    html.Div(id="display-conversation"),
+    style={
+        "overflow-y": "auto",
+        "display": "flex",
+        "height": "calc(80vh - 132px)",
+        "flex-direction": "column-reverse",
+    },
+)
+def textbox(text, box="AI", name="User"):
+    text = text.replace(f"{name}:", "").replace("You:", "")
+    style = {
+        "max-width": "60%",
+        "width": "max-content",
+        "padding": "5px 10px",
+        "border-radius": 25,
+        "margin-bottom": 20,
+    }
+
+    if box == "user":
+        style["margin-left"] = "auto"
+        style["margin-right"] = 0
+
+        return dbc.Card(text, style=style, body=True, color="primary", inverse=True)
+
+    elif box == "AI":
+        style["margin-left"] = 0
+        style["margin-right"] = "auto"
+
+        textbox = dbc.Card(text, style=style, body=True, color="light", inverse=False)
+
+        return html.Div([textbox])
+
+    else:
+        raise ValueError("Incorrect option for `box`.")
 
 # Files
 # dataset = "cv"
@@ -89,7 +151,7 @@ app.layout = html.Div([
                     ],
             optionHeight=50,
             style={'width': '150px', 'margin-right': '5px'},
-            value='cuba_160',
+            value='cv',
             clearable=False),
         html.Button(className="map_btn",
                     style={'background-image' : 'url("/static/load_icon.svg")'},
@@ -155,6 +217,18 @@ app.layout = html.Div([
             type="default",
             fullscreen=True,
             style={ 'backgroundColor': '#FFFFFF50'}, children=html.Div('', id="loading-output")
+        ),
+        dcc.Loading(
+            id="loading-chat",
+            type="default",
+            fullscreen=True,
+            style={ 'backgroundColor': '#FFFFFF50'}, children=html.Div('', id="loading-chat-output")
+        ),
+        dcc.Loading(
+            id="loading-report",
+            type="default",
+            fullscreen=True,
+            style={ 'backgroundColor': '#FFFFFF50'}, children=html.Div('', id="loading-report-output")
         ),
         dcc.Loading(
             id="loading-edge",
@@ -321,7 +395,24 @@ app.layout = html.Div([
                         style= {'fontSize': 12}
                     )
                 ])
-            ])
+            ]),
+            dcc.Tab(label='Assistant', value="6", style={'padding': '0', 'font-size': '0.7vw', 'display': 'flex', 'align-items': 'center', 'justify-content': 'center', 'word-spacing': '100vw'}, selected_style={'padding': '0', 'font-size': '0.7vw', 'display': 'flex', 'align-items': 'center', 'justify-content': 'center', 'word-spacing': '100vw'}, children=[
+                html.Div(style=styles['tab'], children=[
+                            html.Label("GPT-3.5 Explanation Assistant", style={'fontSize': 16, 'font-weight': 'bold', 'text-decoration': 'underline'}),
+                            dcc.Store(id="store-conversation", data=""),
+                            conversation,
+                            controls
+                ])
+            ]),
+            dcc.Tab(label='Reports', value="7", style={'padding': '0', 'font-size': '0.7vw', 'display': 'flex', 'align-items': 'center', 'justify-content': 'center', 'word-spacing': '100vw'}, selected_style={'padding': '0', 'font-size': '0.7vw', 'display': 'flex', 'align-items': 'center', 'justify-content': 'center', 'word-spacing': '100vw'}, children=[
+                html.Div(style=styles['tab'], children=[
+                            html.Label("GPT-3.5 Report Generation", style={'fontSize': 16, 'font-weight': 'bold', 'text-decoration': 'underline'}),
+                            html.Button("Main Story Report", id="msr-btn"),
+                            html.Button("Highlights Report", id="hgl-btn"),
+                            html.Button("All Storylines Report", id="asl-btn"),
+                            html.Div(id='report-output', style={'whiteSpace': 'pre-line'}),
+                ])
+            ]),
         ]),
     ])
     ]),
@@ -1218,6 +1309,166 @@ def update_download_link(sb, elements):
 )
 def clear(n_clicks):
     return [], ""
+
+# Chatbot code source: https://github.com/plotly/dash-sample-apps/blob/main/apps/dash-gpt3-chatbot/app.py
+@app.callback(
+    Output("display-conversation", "children"), [Input("store-conversation", "data")]
+)
+def update_display(chat_history):
+    return [
+        textbox(x, box="user") if i % 2 == 0 else textbox(x, box="AI")
+        for i, x in enumerate(chat_history.split("<split>")[:-1])
+    ]
+
+
+@app.callback(
+    [Output("user-input", "value")],
+    [Input("submit", "n_clicks"), Input("user-input", "n_submit")],
+)
+def clear_input_chat(n_clicks, n_submit):
+    return ""
+
+
+
+@app.callback(
+    [Output("store-conversation", "data"), Output("loading-chat", "children")],
+    [Input("submit", "n_clicks"),
+    Input("user-input", "n_submit"),
+    Input("explain-edge-chat", "n_clicks"),
+    Input("explain-important-chat", "n_clicks"),
+    Input("explain-story-chat", "n_clicks")],
+    [State('execution-id', 'value'), State('store', 'data'),
+    State("user-input", "value"), State("store-conversation", "data"), 
+    State("cytoscape", "elements"), State('cytoscape', 'selectedEdgeData'),
+    State('cytoscape', 'selectedNodeData')],
+)
+def run_chatbot(n_clicks, n_submit, explain_edge_chat, explain_important_chat, explain_story_chat, execution_id, query, user_input, chat_history, elements, edge_data, node_data):
+    print(n_clicks, n_submit, explain_edge_chat)
+    if n_clicks == 0 and n_submit is None and explain_edge_chat == 0 and explain_important_event == 0:
+        return "", None
+
+    if (user_input is None or user_input == "") and explain_edge_chat == 0 and explain_important_event == 0:
+            return chat_history, None
+
+    name = "Assistant"
+
+    ctx = dash.callback_context
+    changed_id = ctx.triggered[0]['prop_id'].split('.')[0]
+    # First add the user input to the chat history
+    if changed_id == "submit" or changed_id == "user-input":
+        print("Free query selected.")
+        chat_history += f"You: {user_input}<split>{name}: "
+    elif changed_id == "explain-edge-chat":
+        print("Edge explanation selected.")
+        if len(edge_data) == 1: # Only one edge must be selected.
+            data = edge_data[0]
+            #offset = min(query.id.astype('int'))
+            node_ids = data['id'].replace("_" + str(execution_id) + "I", '').split(sep='-')
+            id_start = node_ids[0]# - offset
+            id_end = node_ids[1]# - offset
+
+            s1_row = query.loc[query['id'] == str(id_start)].iloc[0] # Access single row.
+            s2_row = query.loc[query['id'] == str(id_end)].iloc[0]
+            s1 = s1_row['title']# + "\n" + s1_row['full_text']
+            s2 = s2_row['title']# + "\n" + s2_row['full_text']
+            user_input = "Explain the possible connections between the following two events: (" + s1 + ") and (" + s2 + ")."
+            chat_history += f"You: {user_input}<split>{name}: "
+        else:
+            print("Edge explanation error: Multiple edges selected.")
+            return chat_history, None
+    elif changed_id == "explain-important-chat":
+        print("Node explanation selected.")
+        if len(node_data) == 1: # Only one node must be selected.
+            node_id = node_data[0]['id']
+            story_id = node_data[0].get('parent', "")
+            story_name = [ele_data['data']['label'] for ele_data in elements if ele_data['data']['id'] == story_id][0] # Get story name.
+
+            edge_i_list = [ele_data['data']['source'] for ele_data in elements if ele_data['data'].get('target') == node_id]
+            edge_j_list = [ele_data['data']['target'] for ele_data in elements if ele_data['data'].get('source') == node_id]
+
+            edge_i_event_labels = [query.loc[query['id'] == str(event_id).replace("_" + str(execution_id) + "I", '')].iloc[0]['title'] for event_id in edge_i_list]
+            edge_j_event_labels = [query.loc[query['id'] == str(event_id).replace("_" + str(execution_id) + "I", '')].iloc[0]['title'] for event_id in edge_j_list]
+
+            user_input = "Explain why the event (" + node_data[0]['label'] + ") is important to the storyline. Consider its preceding events: (" + ", ".join(edge_i_event_labels) + ") and its subsequent events (" + ", ".join(edge_j_event_labels) + ")."
+            chat_history += f"You: {user_input}<split>{name}: "
+        else:
+            print("Node explanation error: Multiple nodes selected.")
+            return chat_history, None
+    elif changed_id == "explain-story-chat":
+        print("Story explanation selected.")
+        if len(node_data) == 1: # Only one node must be selected.
+            story_id = node_data[0].get('parent', "")
+            story_name = [ele_data['data']['label'] for ele_data in elements if ele_data['data']['id'] == story_id][0] # Get story name.
+            events = [ele_data['data']['label'] for ele_data in elements if ele_data['data'].get('parent', "") == story_id]
+            user_input = "Explain the storyline (" + story_name + ") formed by the following events : (" + ", ".join(events) + ")."
+            chat_history += f"You: {user_input}<split>{name}: "
+        else:
+            print("Story explanation error: Multiple nodes selected.")
+            return chat_history, None
+    else:
+        print("ERROR!")
+        return chat_history, None
+
+    model_input = chat_history.replace("<split>", "\n")
+
+    response = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages = [{"role": "system", "content": description},
+                    {'role': 'user', 'content': model_input}],
+        max_tokens=500,
+        stop=["You:"],
+        temperature=0.9,
+    )
+    model_output = response['choices'][0]['message']['content']
+
+    chat_history += f"{model_output}<split>"
+
+    return chat_history, None
+
+
+@app.callback(
+    [Output('report-output', 'children'), Output('loading-report', 'children')],
+    [Input('msr-btn', 'n_clicks'), Input('hgl-btn', 'n_clicks'), Input('asl-btn', 'n_clicks')],
+    [State('execution-id', 'value'), State('store', 'data'), State("cytoscape", "elements")]
+)
+def report_generation(msr, hgl, asl, execution_id, query, elements):
+    ctx = dash.callback_context
+    changed_id = ctx.triggered[0]['prop_id'].split('.')[0]
+    print(changed_id)
+
+    model_input = ""
+    if changed_id == 'msr-btn':
+        # Only get main story.
+        events = [ele_data['data']['label'] for ele_data in elements if "story_0" in ele_data['data'].get('parent', "")]
+        events_str = "[" + ", ".join(events) + "]"
+        model_input = "Please generate a report that explains the main storyline of this narrative map. Make sure to draw conclusions, inferences, and speculate on causes and effects. Do not re-list the events mentioned here. Here is the list of events: " + events_str
+    elif changed_id == 'hgl-btn':
+        events = [ele_data['data']['label'] for ele_data in elements if ele_data['classes'] in ["hub", "ac"]]
+        events_str = "[" + ", ".join(events) + "]"
+        model_input = "Please generate a report that explains the key highlights of this narrative map. Make sure to draw conclusions, inferences, and speculate on causes and effects. Do not re-list the events mentioned here. Here is the list of events: " + events_str
+    elif changed_id == 'asl-btn':
+        stories = [(ele_data['data']['id'], ele_data['data']['label']) for ele_data in elements if ele_data['classes'] == "story"]
+        events_str = ""
+        for idx, story in enumerate(stories):
+            events = [ele_data['data']['label'] for ele_data in elements if ele_data['data'].get('parent', "") == story[0]]
+            if idx == 0:
+                events_str += "Main Story (" + story[1] + "): [" + ", ".join(events) + "] \n"
+            else:
+                events_str += "Side Story " + str(idx) + " (" + story[1] + "): [" + ", ".join(events) + "] \n"
+        model_input = "Please generate a report that explains the main storyline of this narrative map. Make sure to draw conclusions, inferences, and speculate on causes and effects. Do not re-list the events mentioned here. Here is the list of events: " + events_str
+    print(model_input)
+    if model_input != "":
+        response = openai.ChatCompletion.create(   
+            model="gpt-3.5-turbo",
+            messages = [{"role": "system", "content": description},
+                        {'role': 'user', 'content': model_input}],
+            max_tokens=1000,
+            temperature=0.9,
+        )
+        report = response['choices'][0]['message']['content']
+        return report, None
+    else: # Empty report
+        return "", None
 
 
 if __name__ == "__main__":
