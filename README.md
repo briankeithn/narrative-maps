@@ -1,4 +1,4 @@
-# Narrative Maps 1.0.0
+# Narrative Maps 1.1.0
 ## Overview
 This repository contains the following elements:
 
@@ -8,6 +8,8 @@ This repository contains the following elements:
 4. Custom data preparation ("preprocessing" folder, see below for details).
 5. Tutorial and examples ("tutorial" folder), see the detailed tutorial [here](https://github.com/briankeithn/narrative-maps/blob/main/tutorial/TUTORIAL.md).
 6. Simulation-based evaluations ("tests" folder), see the notebooks for details.
+
+## Important: This code is provided as is and will not be maintained.
 
 ## Citing our work
 Please cite the following publication: *Mixed Multi-Model Semantic Interaction for Graph-based Narrative Visualizations*, B. Keith, T. Mitra, C. North. In Proceedings of ACM IUI 2023 (DOI: TBA)
