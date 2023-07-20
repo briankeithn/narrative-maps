@@ -862,7 +862,7 @@ def solve_LP(query, dataset,
         print("--- %s seconds ---" % (time() - start_time))
 
 
-    hdbscan_model = hdbscan.HDBSCAN(min_samples=min_samples,min_cluster_size=min_cluster_size,prediction_data=True)
+    hdbscan_model = hdbscan.HDBSCAN(min_samples=min_samples,min_cluster_size=min_cluster_size,prediction_data=True,cluster_selection_method='leaf')
     labels = hdbscan_model.fit_predict(clusterable_embedding)
     membership_vectors = hdbscan.prediction.all_points_membership_vectors(hdbscan_model)
     numclust = 1

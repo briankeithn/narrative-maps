@@ -126,14 +126,8 @@ def textbox(text, box="AI", name="User"):
         raise ValueError("Incorrect option for `box`.")
 
 # Files
-# dataset = "cv"
-query = pd.DataFrame(columns=['title', 'url', 'date', 'publication', 'full_text', 'id'])#read_query(dataset)
-#sim_table = compute_sim_with_t(query, str(dataset))
-#low_dim_projection, unraveled_set = force_layout(query, positions_dot={}, sim_table=sim_table)
+query = pd.DataFrame(columns=['title', 'url', 'date', 'publication', 'full_text', 'id'])
 element_list = generate_elements(graph_df=pd.DataFrame(), antichain=[], hub_nodes=[], sp=[], query=None, low_dim_projection=None)
-# Previous action storage.
-#previous_actions = []
-
 
 app.layout = html.Div([
     dbc.Row(
@@ -142,11 +136,13 @@ app.layout = html.Div([
         dcc.Dropdown(
             id="dataset-choice",
             options=[{'label':'Coronavirus Data', 'value': 'cv'},
+                    {'label':'Coronavirus Data (Small)', 'value': 'cv_smaller'},
                     {'label':'Papers', 'value': 'papers'},
                     {'label':'Cuban Protests (Full)', 'value': 'cuba'},
                     #{'label':'Cuban Protests (Small)', 'value': 'cuba_small'},
                     {'label':'Cuban Protests (160)', 'value': 'cuba_160'},
                     {'label':'Crescent', 'value': 'crescent'},
+                    {'label':'Mix Test', 'value': 'mix'},
                     {'label':'Custom', 'value': 'custom'}
                     ],
             optionHeight=50,
@@ -369,23 +365,6 @@ app.layout = html.Div([
                     html.Label('Display Similar Documents', style={'font-weight': 'bold'}),
                     html.Label('For each document in the narrative map, the top N most similar documents will be displayed as gray circles close to it.'),
                     dcc.Input(id='similar-input',  type='number', min=0, max=15, step=1, value=2, style = {'width': "150px", 'margin-right': '5px'}),
-                    #html.Label('Filter by Dates', style={'font-weight': 'bold'}),
-                    #html.Label('Filter the data set using a date range.'),
-                    #dcc.DatePickerRange(
-                    #    id='date-range',
-                    #    minimum_nights=1,
-                    #    clearable=True,
-                    #    with_portal=False,
-                    #    start_date_placeholder_text="Start Date",
-                    #    end_date_placeholder_text="End Date",
-                    #    start_date=date(1990, 1, 1),
-                    #    end_date=date(2030, 1, 1),
-                    #    style = {'width': '100%',
-                    #            'marginRight': '15px',
-                    #            'padding': '10px 5px',
-                    #            'borderRadius': '4px'
-                    #            }
-                    #),
                     html.Label('Toggles', style={'font-weight': 'bold'}),
                     toggle_table,
                     html.Label('Interaction Log', style={'font-weight': 'bold'}),
@@ -434,12 +413,10 @@ def intermediate_btn_query(n_clicks, cur_val):
 @app.callback(ServersideOutput('store', 'data'),
               Input('load-data-intermediate', 'value'),
               [State('dataset-choice', 'value'),
-               #State('date-range', 'start_date'),
-               #State('date-range', 'end_date')
                ], memoize=True)
-def query_data(n_clicks, dataset):#, start_date, end_date):
+def query_data(n_clicks, dataset):
     if n_clicks:
-        query = read_query(dataset)#, start_date, end_date)
+        query = read_query(dataset)
         print("Read new data set: " + str(dataset))
         return query
     else:
@@ -730,7 +707,7 @@ def interact_with_graph(rmv_node, rmv_edge, add_edge, add_node,
                      operation_list.append("ACL:" + str(item['content'][0]) + "-" + str(item['content'][1]))
         # Solve LP and create new graph_df.
         cluster_size_est = np.sqrt(len(query.index))/2
-        cluster_size_est = 5 * round(cluster_size_est / 5) # Round to nearest multiple of 5
+        cluster_size_est = max(5 * round(cluster_size_est / 5), 2) # Round to nearest multiple of 5, cannot be below 2.
 
         n_neighbors = 2
         init = 'random'
@@ -759,7 +736,7 @@ def interact_with_graph(rmv_node, rmv_edge, add_edge, add_node,
         graph_df_new, status, scatter_df, sim_table, clust_sim_table, ent_table, ent_doc_list, cluster_assignment = solve_LP(query,
                 dataset=str(dataset), operations=operation_list,
                 K=k_input, mincover=mincover_input/100, sigma_t=sigma_t,
-                min_samples=2, min_cluster_size=cluster_size_est, n_neighbors=n_neighbors, min_dist=min_dist,
+                min_samples=1, min_cluster_size=cluster_size_est, n_neighbors=n_neighbors, min_dist=min_dist,
                 start_nodes=start_nodes, end_nodes=end_nodes, umap_init=init,
                 use_entities=use_entities, use_temporal=use_temporal, strict_start=strict_start, use_regularization=use_regularization)
         status_msg = "LP Status: " + status[1] + ", Clusters: " + str(status[0])# + ", Storylines: " + str(numstories)
@@ -1455,7 +1432,7 @@ def report_generation(msr, hgl, asl, execution_id, query, elements):
                 events_str += "Main Story (" + story[1] + "): [" + ", ".join(events) + "] \n"
             else:
                 events_str += "Side Story " + str(idx) + " (" + story[1] + "): [" + ", ".join(events) + "] \n"
-        model_input = "Please generate a report that explains the main storyline of this narrative map. Make sure to draw conclusions, inferences, and speculate on causes and effects. Do not re-list the events mentioned here. Here is the list of events: " + events_str
+        model_input = "Please generate a report that explains the storylines of this narrative map. Make sure to draw conclusions, inferences, and speculate on causes and effects. Do not re-list the events mentioned here. Here is the list of events: " + events_str
     print(model_input)
     if model_input != "":
         response = openai.ChatCompletion.create(   
