@@ -194,7 +194,7 @@ def read_query(dataset, start_date=None, end_date=None, partial=False):
     query = clean_publication(query)
 
     # Inferring datatime format (this might bring issues depending on the data!)
-    query['date'] = pd.to_datetime(query['date'], infer_datetime_format=True) #8/22/2019 12:15
+    query['date'] = pd.to_datetime(query['date'])
 
     if start_date is not None:
         query = query[(query['date'] >= pd.to_datetime(start_date, format='%Y-%m-%d'))]
@@ -207,10 +207,10 @@ def read_query(dataset, start_date=None, end_date=None, partial=False):
         query[embed_list] = query[embed_list].replace(r'( )+', ',', regex=True)
         query[embed_list] = query[embed_list].replace('\[,', '[', regex=True)
         query[embed_list] = query[embed_list].replace(',]', ']', regex=True)
-        query[embed_list] = query[embed_list].applymap(literal_eval).applymap(np.array)
+        query[embed_list] = query[embed_list].map(literal_eval).map(np.array)
 
         if 'cluster_vec' in query.columns: # Predefined clusters!
-            query[['cluster_vec']] = query[['cluster_vec']].applymap(literal_eval).applymap(np.array)
+            query[['cluster_vec']] = query[['cluster_vec']].map(literal_eval).map(np.array)
 
     query.reset_index(inplace=True)
     query['id'] = [str(i) for i in list(query.index)]
@@ -237,10 +237,10 @@ def read_query_search(dataset, start_date=None, end_date=None):
     query[embed_list] = query[embed_list].replace(r'( )+', ',', regex=True)
     query[embed_list] = query[embed_list].replace('\[,', '[', regex=True)
     query[embed_list] = query[embed_list].replace(',]', ']', regex=True)
-    query[embed_list] = query[embed_list].applymap(literal_eval).applymap(np.array)
+    query[embed_list] = query[embed_list].map(literal_eval).map(np.array)
 
     if 'cluster_vec' in query.columns: # Predefined clusters!
-        query[['cluster_vec']] = query[['cluster_vec']].applymap(literal_eval).applymap(np.array)
+        query[['cluster_vec']] = query[['cluster_vec']].map(literal_eval).map(np.array)
     query.reset_index(inplace=True)
     query['id'] = [str(i) for i in list(query.index)]
 
