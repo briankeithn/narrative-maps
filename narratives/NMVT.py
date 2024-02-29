@@ -41,6 +41,13 @@ import truecase
 import os
 import openai
 
+import nltk
+
+nltk.download('stopwords')
+nltk.download('punkt')
+nltk.download('wordnet')
+
+
 # Build App
 server = flask.Flask(__name__)
 

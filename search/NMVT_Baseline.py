@@ -18,6 +18,12 @@ from dash.dependencies import Input, Output, State, ALL
 import json
 import flask
 
+import nltk
+
+nltk.download('stopwords')
+nltk.download('punkt')
+nltk.download('wordnet')
+
 # Build App
 server = flask.Flask(__name__)
 
