@@ -47,6 +47,9 @@ nltk.download('stopwords')
 nltk.download('punkt')
 nltk.download('wordnet')
 
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Build App
 server = flask.Flask(__name__)
