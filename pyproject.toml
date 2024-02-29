@@ -3,6 +3,7 @@ name = "narrative-maps"
 version = "1.1.1"
 description = ""
 authors = ["Jeffrey Lim <Jeffrey-Lim@outlook.com>"]
+license = "MIT"
 readme = "README.md"
 
 [tool.poetry.dependencies]
