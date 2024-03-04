@@ -1,10 +1,16 @@
+from typing import Any, Literal
+
 import pandas as pd
 import numpy as np
+import numpy.typing as npt
 import networkx as nx
 from math import log, exp, sqrt
+
+import pygraphviz
 from sklearn.metrics import euclidean_distances
 
-def build_graph(graph_df):
+
+def build_graph(graph_df: pd.DataFrame) -> nx.DiGraph:
     G = nx.DiGraph()
     for index, row in graph_df.iterrows():
         G.add_node(str(row['id']), coherence=max(-log(row['coherence']),0))
@@ -12,7 +18,7 @@ def build_graph(graph_df):
             G.add_edge(str(row['id']), str(adj), weight=max(-log(row['adj_weights'][idx]),0))
     return G
 
-def graph_stories(G, start_nodes=[], end_nodes=[]):
+def graph_stories(G: nx.DiGraph, start_nodes: list[int] = [], end_nodes: list[int] = []) -> list[nx.NodeView]:
     # Base case, return the nodes if there is 1 or fewer nodes left.
     if len(G.nodes()) == 0:
         return []
@@ -49,7 +55,7 @@ def graph_stories(G, start_nodes=[], end_nodes=[]):
     #        all_stories + graph_stories(H_i)
     #    return all_stories
 
-def get_shortest_path(G):
+def get_shortest_path(G: nx.DiGraph) -> list[str] | dict[str, str]:
     sources = [node for node, in_degree in G.in_degree() if in_degree == 0]
     targets = [node for node, out_degree in G.out_degree() if out_degree == 0]
     best_st = (sources[0], targets[0])
@@ -69,7 +75,7 @@ def get_shortest_path(G):
     sp = nx.shortest_path(G, best_st[0], best_st[1], weight='weight')
     return sp
 
-def normalize_graph(G):
+def normalize_graph(G: nx.DiGraph) -> nx.DiGraph:
     for node in G.nodes():
         llhs = [edge[2]['weight'] for edge in G.out_edges(node, data=True)]
         probabilities = [exp(-llh) for llh in llhs]
@@ -91,7 +97,7 @@ def maximum_antichain(antichain_list, antichain_op):
 
     return max_list, max_length
 
-def get_representative_landmarks(G, storylines, query, mode="ranked"):
+def get_representative_landmarks(G: nx.DiGraph, storylines: list[list[str]], query: pd.DataFrame, mode: Literal["last", "degree", "centrality", "centroid", "ranked"] = "ranked") -> list[str]:
     antichain = []
     # first is default.
     if mode == "last":
@@ -165,7 +171,7 @@ def get_representative_landmarks(G, storylines, query, mode="ranked"):
         antichain = [story[0] for story in storylines] # get the first element in the story
     return antichain
 
-def force_layout(query, positions_dot, sim_table, top_k=0):
+def force_layout(query: pd.DataFrame, positions_dot: dict[pygraphviz.agraph.Node, tuple[float, float]], sim_table: npt.NDArray[np.float_], top_k: int = 0) -> (dict[int, npt.NDArray[np.float_]], set[int]):
     k = None
     fixed_keys = None
     positions_dot_int = None

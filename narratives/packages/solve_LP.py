@@ -787,16 +787,16 @@ def get_entity_table(query, dataset):
     return ent_table, ent_doc_list
 
 def solve_LP(query, dataset,
-    operations=[], K = 6, mincover=0.20,
-    min_samples=2, min_cluster_size=2,
-    n_neighbors=2, min_dist=0.01,
-    sigma_t = 30,
+    operations=[], K: int = 6, mincover: float = 0.20,
+    min_samples: int = 2, min_cluster_size: int = 2,
+    n_neighbors: int = 2, min_dist: float = 0.01,
+    sigma_t: int = 30,
     start_nodes=[], end_nodes=[],
-    verbose=True, random_state=42,
-    force_cluster=True,
-    use_entities=True, use_temporal=True, 
-    use_regularization=False, strict_start=False, 
-    umap_init='spectral', cosine_sim = True):#, is_WMDS=False):
+    verbose: bool = True, random_state: int = 42,
+    force_cluster: bool = True,
+    use_entities: bool = True, use_temporal: bool = True,
+    use_regularization: bool = False, strict_start: bool = False,
+    umap_init='spectral', cosine_sim: bool = True):#, is_WMDS=False):
 
     global start_time
     start_time = time()

@@ -510,4 +510,4 @@ def display_output(btn_clicks, dataset):#, start_date, end_date):
     return [node_id, node_story, title, output_list]
 
 if __name__ == "__main__":
-    app.run()
+	app.run(port=8051)

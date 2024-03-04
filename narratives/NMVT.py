@@ -1,3 +1,5 @@
+from typing import Any, Literal
+
 import pandas as pd
 import numpy as np
 import re
@@ -18,6 +20,7 @@ import dash
 import dash_cytoscape as cyto
 import dash_bootstrap_components as dbc
 import dash_daq as daq
+from dash.development.base_component import Component
 from dash.exceptions import PreventUpdate
 from dash_extensions.enrich import dash_table as dt
 from dash_extensions.enrich import DashProxy, Output, Input, State, ServersideOutput, html, dcc, ServersideOutputTransform, MultiplexerTransform
@@ -46,10 +49,6 @@ import nltk
 nltk.download('stopwords')
 nltk.download('punkt')
 nltk.download('wordnet')
-
-from dotenv import load_dotenv
-
-load_dotenv()
 
 # Build App
 server = flask.Flask(__name__)
@@ -108,7 +107,9 @@ conversation = html.Div(
         "flex-direction": "column-reverse",
     },
 )
-def textbox(text, box="AI", name="User"):
+
+
+def textbox(text: str, box: str = "AI", name: str = "User") -> dbc.Card | html.Div:
     text = text.replace(f"{name}:", "").replace("You:", "")
     style = {
         "max-width": "60%",
@@ -411,7 +412,7 @@ app.layout = html.Div([
 @app.callback(Output('load-data-intermediate', 'value'),
               Input('load-data-button', 'n_clicks'),
               State('load-data-intermediate', 'value'))
-def intermediate_btn_query(n_clicks, cur_val):
+def intermediate_btn_query(n_clicks: int, cur_val: int) -> int:
     if n_clicks:
         if cur_val == 0:
             return 1
@@ -424,7 +425,7 @@ def intermediate_btn_query(n_clicks, cur_val):
               Input('load-data-intermediate', 'value'),
               [State('dataset-choice', 'value'),
                ], memoize=True)
-def query_data(n_clicks, dataset):
+def query_data(n_clicks: int, dataset: str) -> pd.DataFrame:
     if n_clicks:
         query = read_query(dataset)
         print("Read new data set: " + str(dataset))
@@ -434,7 +435,7 @@ def query_data(n_clicks, dataset):
 
 @app.callback(Output('interact-log-div', 'children'),
               Input('previous-actions', 'data'))
-def update_interactions(previous_actions):
+def update_interactions(previous_actions: list[object]) -> html.P | list[html.P]:
     if previous_actions:
         return [html.P(str(item)) for item in previous_actions]
     return html.P("No interactions have been logged yet.")
@@ -443,7 +444,7 @@ def update_interactions(previous_actions):
                Output('previous-actions','data'),
                Output('data-tbl', 'selected_rows')],
                Input('store', 'data'))
-def update_data_table(query):
+def update_data_table(query: pd.DataFrame | None) -> (list[html.Div | html.Button | dt.DataTable], list[Any], list[int]):
     if query is not None:
         print("Updating data table with new query.")
         new_table = [html.Div('Data table with all the events from the current data set. You can search for specific events here to add them to the map (select rows and add them to the map). You may also set a single starting event (use the radio button of the row you want to set as the starting event).'),
@@ -517,13 +518,14 @@ def update_data_table(query):
                State('use-regularization', 'on'),
                State('strict-start', 'on')
               ], prevent_initial_call=True)
-def interact_with_graph(rmv_node, rmv_edge, add_edge, add_node, 
+
+def interact_with_graph(rmv_node: None, rmv_edge: None, add_edge: int | None, add_node: None,
                         #main_route, anti_chain, 
-                        recompute_lp, add_cluster_list, search_btn, search_enter_key, query,
-                        elements, nodes, edges, k_input, mincover_input, sigma_t,# trans_reduce,
-                        dataset, cluster_value, search_value, similar_input,
-                        selected_rows_table, selected_cells, scatter_fig, execution_id, xai_tab, overview_tab, previous_actions,
-                        use_entities, use_temporal, use_si, use_xai, use_names, use_regularization, strict_start):#, rep_landmark_mode):
+                        recompute_lp: int | None, add_cluster_list: None, search_btn: None, search_enter_key: None, query: pd.DataFrame,
+                        elements: list[object] | None, nodes: list[object] | None, edges: list[object] | None, k_input: int | None, mincover_input: int | None, sigma_t: int | None,# trans_reduce,
+                        dataset: str, cluster_value: int | None, search_value: str | None, similar_input: int,
+                        selected_rows_table: list[int], selected_cells: list[Any] | None, scatter_fig: list[Any] | None, execution_id: int, xai_tab: list[Any], overview_tab: list[Any], previous_actions: list[Any],
+                        use_entities: bool, use_temporal: bool, use_si: bool, use_xai: bool, use_names: bool, use_regularization: bool, strict_start: bool) -> list[Any]:#, rep_landmark_mode):
     ctx = dash.callback_context
     if not ctx.triggered:
         button_id = 'No clicks yet'
@@ -967,7 +969,7 @@ def interact_with_graph(rmv_node, rmv_edge, add_edge, add_node,
               [State('execution-id', 'value'),
               State('cytoscape', 'selectedNodeData'),
               State('store', 'data')])
-def explainTwoEvents(cmp_btn, execution_id, node_data, query):
+def explainTwoEvents(cmp_btn: int | None, execution_id: int, node_data: list[dict[str, str]] | None, query: pd.DataFrame) -> list[list[Component] | str]:
     if node_data is not None:
         if len(node_data) == 2: # Only two nodes.
             if "story" in node_data[0]['id'] or "story" in node_data[0]['id']:
@@ -1014,7 +1016,7 @@ def explainTwoEvents(cmp_btn, execution_id, node_data, query):
               State('cytoscape', 'selectedEdgeData'),
               State('store', 'data'),
               State('use-xai', 'on')])
-def explainEdge(cmp_btn, data, execution_id, xai_tab, edge_data, query, use_xai):
+def explainEdge(cmp_btn: int | None, data: None, execution_id: int, xai_tab: list[dict[str, list[float | str] | int | str]], edge_data: list[Any] | None, query: pd.DataFrame, use_xai: bool) -> list[list[Component] | str]:
     ctx = dash.callback_context
     button_id = ctx.triggered[0]['prop_id'].split('.')[0]
 
@@ -1112,7 +1114,7 @@ def explainEdge(cmp_btn, data, execution_id, xai_tab, edge_data, query, use_xai)
               State('hidden-xai-tbl', 'data'),
               State('cytoscape', 'selectedNodeData'),
               State('store', 'data')])
-def displayTapNodeData(data, execution_id, xai_tab, node_data, query):
+def displayTapNodeData(data: pd.DataFrame | None, execution_id: int, xai_tab: list[dict[str, list[float | str] | int | str]], node_data: list[Any] | None, query: pd.DataFrame) -> list[list[Component] | str]:
     if data:
         if "story" in data['id']:
             return ["", "", "", "", ""]
@@ -1177,7 +1179,7 @@ def displayTapNodeData(data, execution_id, xai_tab, node_data, query):
 
 @app.callback(Output("cytoscape", "generateImage"),
               [Input("get-png-button", "n_clicks")])
-def get_image(get_png_clicks):
+def get_image(get_png_clicks: int) -> dict[str, str]:
     ctx = dash.callback_context
     if ctx.triggered:
         input_id = ctx.triggered[0]["prop_id"].split(".")[0]
@@ -1198,7 +1200,7 @@ def get_image(get_png_clicks):
                Input("zoom-out-button", "n_clicks"),
                Input("zoom-reset-button", "n_clicks")],
                [State("cytoscape", "zoom")])
-def modify_zoom(zi, zo, zr, current_zoom):
+def modify_zoom(zi: int | None, zo: int | None, zr: int | None, current_zoom: float) -> float | None:
     ctx = dash.callback_context
     input_id = ctx.triggered[0]['prop_id'].split('.')[0]
     if input_id == 'zoom-in-button':
@@ -1217,7 +1219,7 @@ def modify_zoom(zi, zo, zr, current_zoom):
      Output('download', 'data'),
      [Input('save-button', 'n_clicks')],
      [State('cytoscape', 'elements')])
-def update_download_link(sb, elements):
+def update_download_link(sb: int, elements: list[dict[str, dict[str, bool | int | str]]] | None) -> dict[str, str] | None:
     ctx = dash.callback_context
     if ctx.triggered:
         button_id = ctx.triggered[0]['prop_id'].split('.')[0]
@@ -1294,14 +1296,14 @@ def update_download_link(sb, elements):
      Output("resetting-table-output", "children")],
     Input("clear-tbl", "n_clicks"),
 )
-def clear(n_clicks):
+def clear(n_clicks: int) -> (list[Any], Literal[""]):
     return [], ""
 
 # Chatbot code source: https://github.com/plotly/dash-sample-apps/blob/main/apps/dash-gpt3-chatbot/app.py
 @app.callback(
     Output("display-conversation", "children"), [Input("store-conversation", "data")]
 )
-def update_display(chat_history):
+def update_display(chat_history: str) -> list[Component]:
     return [
         textbox(x, box="user") if i % 2 == 0 else textbox(x, box="AI")
         for i, x in enumerate(chat_history.split("<split>")[:-1])
@@ -1312,7 +1314,7 @@ def update_display(chat_history):
     [Output("user-input", "value")],
     [Input("submit", "n_clicks"), Input("user-input", "n_submit")],
 )
-def clear_input_chat(n_clicks, n_submit):
+def clear_input_chat(n_clicks: int, n_submit: int | None) -> Literal[""]:
     return ""
 
 
@@ -1329,7 +1331,7 @@ def clear_input_chat(n_clicks, n_submit):
     State("cytoscape", "elements"), State('cytoscape', 'selectedEdgeData'),
     State('cytoscape', 'selectedNodeData')],
 )
-def run_chatbot(n_clicks, n_submit, explain_edge_chat, explain_important_chat, explain_story_chat, execution_id, query, user_input, chat_history, elements, edge_data, node_data):
+def run_chatbot(n_clicks: int, n_submit: int | None, explain_edge_chat: int, explain_important_chat: int, explain_story_chat: int, execution_id: int, query: pd.DataFrame, user_input: str, chat_history: str, elements: list[dict[str, dict[str, bool | int | str]]] | None, edge_data: list[Any] | None, node_data: list[Any] | None) -> (str, None):
     print(n_clicks, n_submit, explain_edge_chat)
     if n_clicks == 0 and n_submit is None and explain_edge_chat == 0 and explain_important_event == 0:
         return "", None
@@ -1459,4 +1461,4 @@ def report_generation(msr, hgl, asl, execution_id, query, elements):
 
 
 if __name__ == "__main__":
-    app.run()
+    app.run(port=8050)
