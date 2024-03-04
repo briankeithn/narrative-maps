@@ -1,9 +1,3 @@
-import pandas as pd
-import numpy as np
-import re
-import plotly.express as px
-from math import log, exp, sqrt
-
 # LP
 from packages.data_utils import *
 from packages.globals import *
@@ -15,8 +9,6 @@ import dash_bootstrap_components as dbc
 from dash import dash_table as dt
 from dash import html, dcc
 from dash.dependencies import Input, Output, State, ALL
-import json
-import flask
 
 import nltk
 
@@ -24,16 +16,8 @@ nltk.download('stopwords')
 nltk.download('punkt')
 nltk.download('wordnet')
 
-from dotenv import load_dotenv
-
-load_dotenv()
-
-# Build App
-server = flask.Flask(__name__)
-
 app = dash.Dash(
 	__name__,
-	server=server,
 	external_stylesheets=[
 	'https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css',
 	'/static/plotly.css',

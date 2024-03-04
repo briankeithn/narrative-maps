@@ -1,12 +1,6 @@
-from typing import Any, Literal
-
-import pandas as pd
-import numpy as np
 import re
-import networkx as nx
 import plotly.express as px
 import itertools
-from math import log, exp, sqrt
 
 # LP
 from packages.solve_LP import solve_LP, compute_sim, compute_sim_with_t
@@ -24,18 +18,13 @@ from dash.development.base_component import Component
 from dash.exceptions import PreventUpdate
 from dash_extensions.enrich import dash_table as dt
 from dash_extensions.enrich import DashProxy, Output, Input, State, ServersideOutput, html, dcc, ServersideOutputTransform, MultiplexerTransform
-#from dash_extensions import Download
 import json
-import flask
-from networkx.drawing.nx_agraph import write_dot, graphviz_layout
 
 # Explanations
 import textwrap
-import shap
 import io
 import base64
 import matplotlib.pyplot as plt
-import string
 from itertools import chain
 from collections import Counter
 import truecase
@@ -50,12 +39,8 @@ nltk.download('stopwords')
 nltk.download('punkt')
 nltk.download('wordnet')
 
-# Build App
-server = flask.Flask(__name__)
-
 app = DashProxy(#dash.Dash(
     __name__,
-    server=server,
     external_stylesheets=[
     'https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css',
     'https://briankeithn.pythonanywhere.com/static/plotly.css',
