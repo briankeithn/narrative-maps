@@ -33,10 +33,6 @@ from packages.graph_utils import *
 from packages.solve_LP import solve_LP, compute_sim, compute_sim_with_t
 from packages.xai import *
 
-nltk.download('stopwords')
-nltk.download('punkt')
-nltk.download('wordnet')
-
 app = DashProxy(  # dash.Dash(
     __name__,
     external_stylesheets=[
@@ -63,7 +59,6 @@ toggle_table = dbc.Table([html.Tbody([toggle_row_ent, toggle_row_temp, toggle_ro
 # Chatbot setup - Source: https://github.com/plotly/dash-sample-apps/blob/main/apps/dash-gpt3-chatbot/app.py
 # Authentication
 openai.api_key = os.getenv("OPENAI_API_KEY")
-print(openai.api_key)
 # Define controls
 controls = dbc.InputGroup(
     children=[
@@ -259,21 +254,21 @@ app.layout = html.Div([
                 type='hidden'
             )
         ]),
-    dbc.Row([
-        html.Div(className='eight columns', style={"position": "relative"}, children=[
+    dbc.Row(style={'display': 'flex'}, children=[
+        dbc.Col(width=8, children=[
             cyto.Cytoscape(
                 id='cytoscape',
                 elements=element_list,
                 zoom=1,
                 layout=base_layout_fit,
-                style={'height': '95vh', 'width': '68.7vw', 'border-style': 'solid'},
+                style={'height': '95vh', 'min-width': '67vw', 'border-style': 'solid'},
                 stylesheet=cyto_stylesheet,
                 boxSelectionEnabled=False,
                 responsive=True,
                 panningEnabled=True
             )
         ]),
-        html.Div(className='four columns', children=[
+        dbc.Col(width=4, children=[
             dcc.Tabs(id='tabs', value="0", style={'font-size': 12, 'height': '5.5vh'}, children=[
                 dcc.Tab(label='Overview', value="0",
                         style={'padding': '0', 'font-size': '0.7vw', 'display': 'flex', 'align-items': 'center', 'justify-content': 'center', 'word-spacing': '100vw'},
@@ -1498,4 +1493,4 @@ def report_generation(msr, hgl, asl, execution_id, query, elements):
 
 
 if __name__ == "__main__":
-    app.run(port=8050)
+    app.run(port=8050, debug=True)
