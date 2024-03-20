@@ -56,7 +56,7 @@
 }
 
 html, body {
-    overflow:hidden;
+    overflow:visible;
 }
 
 .tab-content {
