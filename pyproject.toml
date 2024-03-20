@@ -33,6 +33,7 @@ ftfy = "^6.1.3"
 spacy = "^3.7.4"
 en-core-web-trf = { url = "https://github.com/explosion/spacy-models/releases/download/en_core_web_trf-3.7.3/en_core_web_trf-3.7.3-py3-none-any.whl" }
 python-dotenv = "^1.0.1"
+werkzeug = "^2.3.8"
 
 [tool.poetry.group.pytorch]
 # PyTorch is listed as an optional dependency here, because adding PyTorch with Poetry sucks

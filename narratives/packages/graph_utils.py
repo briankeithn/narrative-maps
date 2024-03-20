@@ -18,7 +18,7 @@ def build_graph(graph_df: pd.DataFrame) -> nx.DiGraph:
             G.add_edge(str(row['id']), str(adj), weight=max(-log(row['adj_weights'][idx]),0))
     return G
 
-def graph_stories(G: nx.DiGraph, start_nodes: list[int] = [], end_nodes: list[int] = []) -> list[Any]:
+def graph_stories(G: nx.DiGraph, start_nodes: list[int] = [], end_nodes: list[int] = []) -> list[list[str]]:
     # Base case, return the nodes if there is 1 or fewer nodes left.
     if len(G.nodes()) == 0:
         return []
