@@ -66,36 +66,35 @@ sentence_transformers==2.2.2
 - The connection explanation and event comparison functions use [SHAP](https://github.com/slundberg/shap) to generate explanations. This approach was adapted from [this implementation of text similarity explainable metrics](https://github.com/yg211/explainable-metrics). 
 
 ## Requirements
-Here is the list of requirements for the project. Please note that everything has been implemented using Python 3.8. You may also need to install some NLTK packages (`stopwords`, `punkt`, and `wordnet`). Also make sure to have GraphViz properly installed (needed to use NetworkX's `graphviz_layout`).
+Here is the list of requirements for the project. Please note that everything has been implemented using Python 3.8. You may also need to install some NLTK packages (`stopwords`, `punkt`, and `wordnet`). Also make sure to have GraphViz properly installed (needed to use NetworkX's `graphviz_layout` and `pygraphviz`).
 ```
-dash==2.7.0
-dash_bootstrap_components==1.0.0b3
-dash_cytoscape==0.3.0
-dash_daq==0.5.0
-dash_extensions==0.1.7
-Flask==1.1.2
+dash==3.0.4
+dash_bootstrap_components==2.0.2
+dash_cytoscape==1.0.1
+dash_daq==0.6.0
+dash_extensions==2.0.4
+Flask==3.0.3
 ftfy==6.0.3
-hdbscan==0.8.27
-matplotlib==3.3.4
+hdbscan==0.8.40
+matplotlib==3.10.3
 networkx==3.4.2
-nltk==3.6.1
-numpy==1.21.2
-pandas==1.2.4
-plotly==5.3.1
+nltk==3.8.1
+numpy==2.2.5
+pandas==2.2.3
+plotly==6.1.0
 PuLP==2.5.0
-pygraphviz==1.7
 python_dateutil==2.8.2
-scikit_learn==1.1.2
-scipy==1.6.2
-sentence_transformers==2.2.2
-shap==0.41.0
-spacy==3.1.3
-torch==1.12.1
-transformers==4.21.0
+scikit_learn==1.6.0
+scipy==1.15.3
+sentence_transformers==4.1.0
+shap==0.47.2
+spacy==3.8.4
+transformers==4.51.3
 truecase==0.0.14
-umap==0.1.1
 umap_learn==0.5.1
-torch==1.10.2
+torch==2.7.0
+pygraphviz==1.14
+en-core-web-md @ https://github.com/explosion/spacy-models/releases/download/en_core_web_md-3.8.0/en_core_web_md-3.8.0-py3-none-any.whl
 ```
 
 ## Issues and Bugs
