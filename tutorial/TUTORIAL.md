@@ -1,6 +1,6 @@
 # Narrative Maps Tutorial
 ## Introduction
-We will work through a series of examples using the Coronavirus data set. In this process, I'll show the basic functionalities of the tool, the semantic interaction elements, and the explainable AI elements. I'll also show some tips to get better maps that I have gathered throughout my test runs. For reproducibility purposes, we will do this in the PythonAnywhere version. In your local system, you might get a different starting map, even though we will use the same seed. 
+We will work through a series of examples using the Coronavirus data set. In this process, I'll show the basic functionalities of the tool, the semantic interaction elements, and the explainable AI elements. I'll also show some tips to get better maps that I have gathered throughout my test runs. In your local system, you might get a different starting map, even though we will use the same seed. 
 
 ## Initial Setup
 ### Loading the Data
@@ -24,7 +24,7 @@ To generate the map, we set the parameters with the values mentioned above and c
 You should see a status message besides the map generation button showing the following elements: the status of the linear program ("Optimal" if a solution was found and "Unfeasible" if no solution was found), the number of topical clusters in the data set, and the number of storylines (note that this count includes both the big stories surrounded by gray boxes and "singleton storylines" that contain a single event). These results are mostly for debugging purposes. In particular, if you find that the linear program is unfeasible, that points towards either the parameters being too strict (e.g., high coverage in a data set with many clusters) or conflicting constraints (e.g., adding an edge and then removing one of its events).
 
 ## Basic Navigation and Functions
-Now that we have a map, it should look like the map below, but it might be mirrored or arranged slightly differently depending on how the computation of the layout algorithm goes. However, the contents should be the same (unless there is an update on PythonAnywhere that messes everything up).
+Now that we have a map, (ideally) it should look like the map below, but it might be mirrored or arranged slightly differently depending on how the computation of the layout algorithm goes.
 
 <img src="first_map.png" width="700"/>
 
