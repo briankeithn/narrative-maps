@@ -5,7 +5,7 @@ dash_daq==0.6.0
 dash_extensions==2.0.4
 Flask==3.0.3
 ftfy==6.0.3
-hdbscan==0.8.40
+hdbscan==0.8.39
 matplotlib==3.10.3
 networkx==3.4.2
 nltk==3.8.1
@@ -21,7 +21,7 @@ shap==0.47.2
 spacy==3.8.4
 transformers==4.51.3
 truecase==0.0.14
-umap_learn==0.5.1
+umap_learn==0.5.8
 torch==2.7.0
 pygraphviz==1.14
 en-core-web-md @ https://github.com/explosion/spacy-models/releases/download/en_core_web_md-3.8.0/en_core_web_md-3.8.0-py3-none-any.whl

@@ -5,7 +5,6 @@ import pickle
 
 from ast import literal_eval
 from pulp import *
-from pulp import GLPK_CMD
 from math import log, exp, pi, sqrt, ceil
 from sklearn.metrics.pairwise import cosine_similarity
 import sklearn.cluster as cluster
@@ -957,7 +956,7 @@ def solve_LP(query, dataset,
     if verbose:
         print("Solving model...")
         print("--- %s seconds ---" % (time() - start_time))
-    prob.solve(PULP_CBC_CMD(mip=False, warmStart=True))
+    prob.solve(COIN_CMD(mip=False, warmStart=True))
 
     varsdict = extract_varsdict(prob)
     # Overwrite last solution.

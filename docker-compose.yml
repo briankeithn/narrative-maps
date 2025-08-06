@@ -1,0 +1,15 @@
+services:
+  narrative-maps:
+    build: .
+    ports:
+      - "8050:8050"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONDONTWRITEBYTECODE=1
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+    tty: true
+    stdin_open: true

@@ -1,8 +1,8 @@
-# Narrative Maps 2.0.0
+# Narrative Maps 2.1.0
 ## Overview
 This repository contains the following elements:
 
-1. Narrative Maps Visualization Tool ("narratives" folder).
+1. Narrative Maps Visualization Tool ("NMVT.py").
 2. Testing data sets ("data" folder).
 3. Custom data preparation ("preprocessing" folder, see below for details).
 4. Tutorial and examples ("tutorial" folder), see the detailed tutorial [here](https://github.com/briankeithn/narrative-maps/blob/main/tutorial/TUTORIAL.md).
@@ -24,13 +24,47 @@ Further research is being developed based on this interactive prototype. However
 - [German, Keith, and North](https://ceur-ws.org/Vol-3964/paper2.pdf). This work presents an alternative extraction algorithm and compares it with a (simplified) version of Narrative Maps. It also has an associated [GitHub Repository](https://ceur-ws.org/Vol-3964/paper2.pdf).
 
 ## Running locally
-In the "narratives" directory, run the following command:
+First, ensure you have Python 3.12 and GraphViz installed on your system.
+
+Set up the environment:
+
+**On Linux/Mac:**
+```bash
+python -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt
 ```
+
+**On Windows:**
+```bash
+python -m venv .venv && .venv\Scripts\activate && pip install -r requirements.txt
+```
+
+**Note for Windows users:** If you encounter issues installing `pygraphviz`, try:
+```bash
+set INCLUDE=C:\Program Files\Graphviz\include
+set LIB=C:\Program Files\Graphviz\lib
+pip install pygraphviz --no-binary pygraphviz
+```
+
+Then, in the root directory of the project, run:
+```bash
 python NMVT.py
 ```
 
+## Running with Docker
+The easiest way to run the Narrative Maps tool is using Docker, which handles all dependencies automatically. Note that the first build might take a while as it downloads and installs all dependencies. 
+
+### Running the application
+1. Clone this repository
+2. Navigate to the project directory
+3. Run the following command:
+
+```bash
+docker-compose up --build
+```
+4. Open your browser and go to `http://localhost:8050`
+
 ## Running with custom data
-I added a specific option to run with Custom data in your local version. Simply create a "custom.csv" file, place it in the "data" folder, and select the "Custom" option in the data selection drop down in the main menu.
+To run with Custom data in your local version. Simply create a "custom.csv" file, place it in the "data" folder, and select the "Custom" option in the data selection drop down in the main menu.
 
 The CSV file must have the following structure (columns):
 - id (numerical id, assumed integer, assumed 0-indexed in increasing order by date, so 0 is the first document in temporal order)
@@ -66,7 +100,14 @@ sentence_transformers==2.2.2
 - The connection explanation and event comparison functions use [SHAP](https://github.com/slundberg/shap) to generate explanations. This approach was adapted from [this implementation of text similarity explainable metrics](https://github.com/yg211/explainable-metrics). 
 
 ## Requirements
-Here is the list of requirements for the project. Please note that everything has been implemented using Python 3.8. You may also need to install some NLTK packages (`stopwords`, `punkt`, and `wordnet`). Also make sure to have GraphViz properly installed (needed to use NetworkX's `graphviz_layout` and `pygraphviz`).
+Here is the list of requirements for the project.
+
+**System Requirements:**
+- Python 3.12
+- GraphViz (required for `pygraphviz`)
+
+**Python Packages:**
+All required packages are listed in `requirements.txt`:
 ```
 dash==3.0.4
 dash_bootstrap_components==2.0.2
@@ -75,7 +116,7 @@ dash_daq==0.6.0
 dash_extensions==2.0.4
 Flask==3.0.3
 ftfy==6.0.3
-hdbscan==0.8.40
+hdbscan==0.8.39
 matplotlib==3.10.3
 networkx==3.4.2
 nltk==3.8.1
@@ -91,13 +132,16 @@ shap==0.47.2
 spacy==3.8.4
 transformers==4.51.3
 truecase==0.0.14
-umap_learn==0.5.1
+umap_learn==0.5.8
 torch==2.7.0
 pygraphviz==1.14
 en-core-web-md @ https://github.com/explosion/spacy-models/releases/download/en_core_web_md-3.8.0/en_core_web_md-3.8.0-py3-none-any.whl
 ```
 
-## Issues and Bugs
+**Additional Setup:**
+On the first run, the system will automatically download required NLTK data (`stopwords`, `punkt`, and `wordnet`).
+
+## Known Issues and Bugs
 - Complex Maps: When the maps become too big or too complex to handle by the layout engine, there will be issues with the bounding boxes of the storyline (e.g., a big gray box that engulfs everything else). This seems to be an issue with the GraphViz/DOT engine that's running behind the scenes. It doesn't look like a limitation of Cytoscape. But I might be wrong.
 - Cluster Coloring: In some rare cases (I haven't been able to reproduce this yet), nodes that have been assigned to a specific cluster (e.g. "blue") get their color removed in the next iteration, despite still belonging to that cluster and still being used by the semantic interaction code as such. This is only a display issue, but it might be annoying.
 
