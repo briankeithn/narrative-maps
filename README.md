@@ -12,12 +12,29 @@ This is a major release that required updating several parts of the code to hand
 ## Important: This code is provided AS IS under a MIT License.
 
 ## Scientific Publications associated with this work:
+Please cite the following publication if you use this repository:
+```
+@article{keith2025nmvt,
+	title = {Narrative Maps Visualization Tool (NMVT): An interactive narrative analytics system based on the narrative maps framework},
+	journal = {SoftwareX},
+	volume = {32},
+	pages = {102377},
+	year = {2025},
+	issn = {2352-7110},
+	doi = {https://doi.org/10.1016/j.softx.2025.102377},
+	url = {https://www.sciencedirect.com/science/article/pii/S2352711025003437},
+	author = {Brian {Keith Norambuena}},
+	keywords = {Narrative extraction, Visual analytics, Sensemaking, Explainable AI},
+}
+```
+
 The following articles are based upon our work in this functional prototype:
 
 - [Keith and Mitra (2020)](https://dl.acm.org/doi/abs/10.1145/3432927). This article provides further details on the Narrative Maps framework and the basic extraction algorithm.
 - [Keith, Mitra, and North (2021)](https://journals.sagepub.com/doi/abs/10.1177/14738716221079593). This article provides information on the design guidelines that we followed in the implementation of our system.
 - [Keith, Mitra, and North (2023)](https://dl.acm.org/doi/abs/10.1145/3581641.3584076). This article presents the semantic interaction model of our system and evaluations based on simulations and expert feedback.
 - [Keith, German, Krokos, Joseph, and North (2025)](https://ceur-ws.org/Vol-3964/paper1.pdf). This article presents the XAI components of our work and an associated user study.
+- [Keith (2025)](https://www.sciencedirect.com/science/article/pii/S2352711025003437). This article presents the interactive narrative analytics system and provides technical information about its design.
 
 Further research is being developed based on this interactive prototype. However, this version is deemed to be appropriate for release for testing purposes. If you wish to purely test the algorithms, I would recommend the following work and associated repository:
 
