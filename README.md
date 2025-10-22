@@ -38,7 +38,7 @@ The following articles are based upon our work in this functional prototype:
 
 Further research is being developed based on this interactive prototype. However, this version is deemed to be appropriate for release for testing purposes. If you wish to purely test the algorithms, I would recommend the following work and associated repository:
 
-- [German, Keith, and North](https://ceur-ws.org/Vol-3964/paper2.pdf). This work presents an alternative extraction algorithm and compares it with a (simplified) version of Narrative Maps. It also has an associated [GitHub Repository](https://ceur-ws.org/Vol-3964/paper2.pdf).
+- [German, Keith, and North (2025)](https://ceur-ws.org/Vol-3964/paper2.pdf). This work presents an alternative extraction algorithm and compares it with a (simplified) version of Narrative Maps. It also has an associated [GitHub Repository](https://ceur-ws.org/Vol-3964/paper2.pdf).
 
 ## Running locally
 First, ensure you have Python 3.12 and GraphViz installed on your system.
