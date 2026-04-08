@@ -28,17 +28,18 @@ Please cite the following publication if you use this repository:
 }
 ```
 
-The following articles are based upon our work in this functional prototype:
+The following articles are based on our work on this functional prototype:
+- [Keith and Mitra (2020)](https://dl.acm.org/doi/abs/10.1145/3432927). This article presents the Narrative Maps framework and the basic extraction algorithm.
+- [Keith, Mitra, and North (2022)](https://journals.sagepub.com/doi/abs/10.1177/14738716221079593). This article presents the design guidelines that we followed in the implementation of our system.
+- [Keith, Mitra, and North (2023)](https://dl.acm.org/doi/abs/10.1145/3581641.3584076). This article presents the semantic interaction (SI) model of our system, along with evaluations based on simulations and expert feedback.
+- [Keith (2025)](https://www.sciencedirect.com/science/article/pii/S2352711025003437). This article presents the interactive narrative analytics system and technical information about its design.
+- [Keith, German, Krokos, Joseph, and North (2025)](https://ceur-ws.org/Vol-3964/paper1.pdf). This article presents the explainable AI (XAI) components of our work and an associated user study.
+- [Keith, German, Krokos, Joseph, and North (2026)](https://arxiv.org/pdf/2603.29651). This article presents an insight-based evaluation of the SI components of our work.
 
-- [Keith and Mitra (2020)](https://dl.acm.org/doi/abs/10.1145/3432927). This article provides further details on the Narrative Maps framework and the basic extraction algorithm.
-- [Keith, Mitra, and North (2021)](https://journals.sagepub.com/doi/abs/10.1177/14738716221079593). This article provides information on the design guidelines that we followed in the implementation of our system.
-- [Keith, Mitra, and North (2023)](https://dl.acm.org/doi/abs/10.1145/3581641.3584076). This article presents the semantic interaction model of our system and evaluations based on simulations and expert feedback.
-- [Keith, German, Krokos, Joseph, and North (2025)](https://ceur-ws.org/Vol-3964/paper1.pdf). This article presents the XAI components of our work and an associated user study.
-- [Keith (2025)](https://www.sciencedirect.com/science/article/pii/S2352711025003437). This article presents the interactive narrative analytics system and provides technical information about its design.
-
-Further research is being developed based on this interactive prototype. However, this version is deemed to be appropriate for release for testing purposes. If you wish to purely test the algorithms, I would recommend the following work and associated repository:
-
-- [German, Keith, and North (2025)](https://ceur-ws.org/Vol-3964/paper2.pdf). This work presents an alternative extraction algorithm and compares it with a (simplified) version of Narrative Maps. It also has an associated [GitHub Repository](https://ceur-ws.org/Vol-3964/paper2.pdf).
+The following are other useful resources and related work in the field of Interactive Narrative Analytics (INA):
+- [Keith (2026)](https://ieeexplore.ieee.org/abstract/document/11321265/). This article presents the general foundation of the field of INA and its challenges at the time of publication.
+- [German, Keith, and North (2025)](https://ceur-ws.org/Vol-3964/paper2.pdf). This article presents an alternative extraction algorithm (Narrative Trails) and compares it with a simplified version of Narrative Maps. It also has an associated [GitHub repository](https://github.com/faustogerman/narrative-trails).
+- [Keith, Rojas, Meneses, Lam, Flores, Molina, and Leyton (2026)](https://arxiv.org/pdf/2603.29661). This article presents a modified version of the Narrative Trails method that steers narratives based on human-provided agendas using LLMs, allowing the extraction of customized narratives from document collections without sacrificing coherence.
 
 ## Running locally
 First, ensure you have Python 3.12 and GraphViz installed on your system.
